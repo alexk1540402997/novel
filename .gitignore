@@ -1,0 +1,32 @@
+# Flutter
+.dart_tool/
+.packages
+build/
+*.iml
+.idea/
+.vscode/
+*.lock
+
+# Android
+*.apk
+*.aab
+*.jks
+*.keystore
+local.properties
+gradle.properties
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+
+# Misc
+.DS_Store
+*.swp
+*.swo
+*~
+Thumbs.db
+
+# API Keys (重要!)
+config.json
+*.env
+secrets/
