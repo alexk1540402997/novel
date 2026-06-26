@@ -557,4 +557,39 @@ $oldState
       await ConfigService().set('other_params.${entry.key}', entry.value);
     }
   }
+
+  /// 构建带上下文的续写提示词
+  String buildContextualPrompt({
+    required String instruction,
+    required String contextMemory,
+    String? worldSettingsSummary,
+    String? characterStatusSummary,
+    String? activeForeshadowings,
+  }) {
+    final buf = StringBuffer();
+
+    if (contextMemory.isNotEmpty) {
+      buf.writeln(contextMemory);
+      buf.writeln('');
+    }
+    if (worldSettingsSummary != null && worldSettingsSummary.isNotEmpty) {
+      buf.writeln('=== 相关世界观设定 ===');
+      buf.writeln(worldSettingsSummary);
+      buf.writeln('');
+    }
+    if (characterStatusSummary != null && characterStatusSummary.isNotEmpty) {
+      buf.writeln('=== 角色当前状态 ===');
+      buf.writeln(characterStatusSummary);
+      buf.writeln('');
+    }
+    if (activeForeshadowings != null && activeForeshadowings.isNotEmpty) {
+      buf.writeln('=== 待回收伏笔提示 ===');
+      buf.writeln(activeForeshadowings);
+      buf.writeln('');
+    }
+    buf.writeln('=== 写作指令 ===');
+    buf.writeln(instruction);
+
+    return buf.toString();
+  }
 }

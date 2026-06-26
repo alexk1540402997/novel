@@ -12,7 +12,7 @@ import 'worldbook_page.dart';
 import 'chapter_blueprint_page.dart';
 import 'character_page.dart';
 import 'foreshadowing_page.dart';
-import 'chapter_management_page.dart';
+import 'memory_overview_page.dart';
 import 'other_settings_page.dart';
 import 'large_model_settings_page.dart';
 
@@ -35,7 +35,7 @@ class _HomePageState extends State<HomePage> {
     (icon: Icons.article, labelKey: 'nav_chapter_blueprint', page: ChapterBlueprintPage()),
     (icon: Icons.people, labelKey: 'nav_characters', page: CharacterPage()),
     (icon: Icons.lightbulb, labelKey: 'nav_foreshadowing', page: ForeshadowingPage()),
-    (icon: Icons.library_books, labelKey: 'nav_chapter_management', page: ChapterManagementPage()),
+    (icon: Icons.memory, labelKey: 'nav_memory', page: MemoryOverviewPage()),
     (icon: Icons.settings, labelKey: 'nav_other_settings', page: OtherSettingsPage()),
     (icon: Icons.settings_applications, labelKey: 'nav_large_model_settings', page: LargeModelSettingsPage()),
   ];
