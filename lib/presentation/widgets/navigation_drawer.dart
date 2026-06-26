@@ -50,8 +50,8 @@ class AppNavigationDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.article),
-            title: Text(localizations.translate('nav_chapter_blueprint')),
+            leading: const Icon(Icons.edit_note),
+            title: Text(localizations.translate('nav_chapter_writer')),
             selected: selectedIndex == 2,
             onTap: () {
               Navigator.pop(context);
