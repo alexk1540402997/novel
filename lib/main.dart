@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'app/app.dart';
 import 'utils/config_service.dart';
 import 'domain/services/logger_service.dart';
+import 'data/repositories/genre_repository.dart';
 
 void main() async {
   // 确保 WidgetsBinding 初始化完成
@@ -11,6 +12,9 @@ void main() async {
 
   // 初始化配置服务
   await ConfigService().init();
+
+  // 初始化类型类目数据
+  await GenreRepository().init();
 
   runApp(const NovelGeneratorApp());
 }

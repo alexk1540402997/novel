@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../presentation/pages/home_page.dart';
 import '../presentation/pages/large_model_settings_page.dart';
+import '../presentation/pages/create_novel_wizard_page.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -9,6 +10,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const HomePage());
       case '/large_model_settings':
         return MaterialPageRoute(builder: (_) => const LargeModelSettingsPage());
+      case '/create_novel_wizard':
+        return MaterialPageRoute(builder: (_) => const CreateNovelWizardPage());
       default:
         return _errorRoute();
     }

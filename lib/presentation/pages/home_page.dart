@@ -56,45 +56,15 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  /// 显示添加小说对话框
+  /// 打开创作向导
   Future<void> _showAddNovelDialog() async {
-    final localizations = AppLocalizations.of(context);
-    String novelName = '';
+    final result =
+        await Navigator.pushNamed(context, '/create_novel_wizard');
 
-    return showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(localizations.translate('add_novel')),
-          content: TextField(
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: localizations.translate('enter_novel_name'),
-            ),
-            onChanged: (value) {
-              novelName = value;
-            },
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text(localizations.translate('cancel')),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text(localizations.translate('confirm')),
-              onPressed: () async {
-                if (novelName.trim().isNotEmpty) {
-                  Navigator.of(context).pop();
-                  await _createNovelFolder(novelName.trim());
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
+    if (result != null && result is Map<String, dynamic>) {
+      final novelName = result['name'] as String;
+      await _createNovelFolder(novelName);
+    }
   }
 
   /// 创建小说文件夹
@@ -106,7 +76,6 @@ class _HomePageState extends State<HomePage> {
       final novelDir = Directory(novelPath);
 
       if (await novelDir.exists()) {
-        // 如果文件夹已存在，显示错误消息
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -123,7 +92,6 @@ class _HomePageState extends State<HomePage> {
           'Attempted to create novel folder that already exists: $novelName',
         );
       } else {
-        // 创建新的小说文件夹
         await novelDir.create(recursive: true);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -138,8 +106,6 @@ class _HomePageState extends State<HomePage> {
           );
         }
         LoggerService().logInfo('Created new novel folder: $novelName');
-
-        // 刷新小说选择下拉框
         _novelSelectorKey.currentState?.refreshNovelFolders();
       }
     } catch (e) {

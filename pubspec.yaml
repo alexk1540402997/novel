@@ -33,3 +33,4 @@ flutter:
     - assets/config/
     - assets/help/
     - assets/i18n/
+    - assets/data/

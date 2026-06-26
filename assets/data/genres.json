@@ -1,0 +1,258 @@
+{
+  "audiences": [
+    {
+      "id": "male",
+      "name": "男频",
+      "description": "面向男性读者的小说频道，涵盖玄幻、都市、历史、科幻等热门类型",
+      "level": 0,
+      "children": [
+        {
+          "id": "xuanhuan",
+          "name": "玄幻",
+          "description": "东方玄幻世界观，修炼、宗门、天材地宝",
+          "level": 1,
+          "children": [
+            {
+              "id": "dongfang-xuanhuan",
+              "name": "东方玄幻",
+              "description": "以中国神话、道家修炼体系为基础的幻想世界",
+              "level": 2,
+              "children": [
+                {"id": "tag-xiuzhen", "name": "修真流", "description": "以道家修真为核心修炼体系", "level": 3},
+                {"id": "tag-honghuang", "name": "洪荒流", "description": "以洪荒时代为背景，先天生灵、天道争夺", "level": 3},
+                {"id": "tag-fanren", "name": "凡人流", "description": "主角出身平凡，靠机缘和努力一步步成长", "level": 3},
+                {"id": "tag-xitong", "name": "系统流", "description": "主角获得系统辅助修炼", "level": 3},
+                {"id": "tag-qihuan", "name": "气运流", "description": "以气运、命数为核心的修炼体系", "level": 3}
+              ],
+              "template": {
+                "outlines": [
+                  {"title": "经典东方玄幻大纲", "content": "## 总纲\n主角出身平凡/废材 → 获得奇遇/机缘 → 拜入宗门 → 宗门大比 → 外出历练 → 秘境夺宝 → 势力争斗 → 飞升/超脱\n\n## 分卷建议\n- 卷一：微末崛起（获得金手指/奇遇）\n- 卷二：初露锋芒（宗门/学院篇）\n- 卷三：名动一方（外出历练、秘境探险）\n- 卷四：龙争虎斗（势力之争、天骄争锋）\n- 卷五：凌驾九天（飞升/证道/超脱）"},
+                  {"title": "凡人流大纲", "content": "## 总纲\n凡人出身 → 偶然踏入修仙 → 谨慎求生 → 步步为营 → 历经磨难 → 最终超脱\n\n## 分卷建议\n- 卷一：凡人之躯（接触修仙世界）\n- 卷二：炼气筑基（宗门底层挣扎）\n- 卷三：金丹元婴（逐步崭露头角）\n- 卷四：化神炼虚（一方强者）\n- 卷五：渡劫飞升（超脱之路）"}
+                ],
+                "worldbuilding": [
+                  {"category": "修炼体系", "title": "境界划分", "prompt": "请设定修炼境界等级（如：炼气→筑基→金丹→元婴→化神→炼虚→合体→大乘→渡劫）"},
+                  {"category": "势力格局", "title": "宗门/势力", "prompt": "请设定主要宗门、家族、势力及其关系"},
+                  {"category": "地理", "title": "世界地图", "prompt": "请设定世界地理（大陆、秘境、禁地等）"},
+                  {"category": "规则", "title": "天道规则", "prompt": "请设定核心世界观规则（修炼原理、灵气体系、因果/气运等）"}
+                ],
+                "questions": [
+                  {"question": "主角的金手指/奇遇是什么？", "category": "角色", "suggestions": ["上古传承", "神秘系统", "特殊体质", "强者灵魂附体", "重生记忆"]},
+                  {"question": "主角的性格定位？", "category": "角色", "suggestions": ["杀伐果断", "谨慎稳健", "热血冲动", "腹黑算计", "淡然超脱"]},
+                  {"question": "世界的灵气/修炼资源分布？", "category": "世界观", "suggestions": ["上界浓郁下界稀薄", "宗门垄断", "秘境产出", "灵石矿脉"]},
+                  {"question": "主要冲突来源？", "category": "情节", "suggestions": ["宗门争斗", "资源争夺", "复仇", "天骄争锋", "正邪对立"]},
+                  {"question": "是否有女主/感情线？", "category": "情节", "suggestions": ["单女主", "多女主", "无女主/无CP", "女主强大型", "女主辅助型"]}
+                ]
+              }
+            },
+            {
+              "id": "xifang-xuanhuan",
+              "name": "西方玄幻",
+              "description": "以西方奇幻元素为主，剑与魔法、龙与骑士",
+              "level": 2,
+              "children": [
+                {"id": "tag-jianyumofa", "name": "剑与魔法", "description": "传统西式奇幻，骑士、法师、冒险", "level": 3},
+                {"id": "tag-shishi", "name": "史诗奇幻", "description": "宏大世界观、多线叙事、史诗感", "level": 3},
+                {"id": "tag-heian", "name": "黑暗奇幻", "description": "阴暗基调、残酷世界观", "level": 3}
+              ],
+              "template": {
+                "outlines": [
+                  {"title": "经典西方玄幻大纲", "content": "## 总纲\n主角觉醒能力/获得传承 → 加入冒险者公会 → 探索地下城 → 对抗黑暗势力 → 拯救世界\n\n## 分卷建议\n- 卷一：命运之始（觉醒/奇遇）\n- 卷二：冒险启程（加入公会/组队）\n- 卷三：暗流涌动（发现阴谋）\n- 卷四：龙与魔法（史诗战争）\n- 卷五：命运决战（终极对决）"}
+                ],
+                "worldbuilding": [
+                  {"category": "魔法体系", "title": "魔法/力量体系", "prompt": "请设定魔法或力量等级体系"},
+                  {"category": "种族", "title": "智慧种族", "prompt": "请设定世界中的种族（人类、精灵、矮人、兽人等）"},
+                  {"category": "势力", "title": "国家与势力", "prompt": "请设定主要国家、王国、公会的格局"}
+                ],
+                "questions": [
+                  {"question": "主角的职业/定位？", "category": "角色", "suggestions": ["魔法师", "战士/骑士", "盗贼/刺客", "召唤师", "全系天才"]},
+                  {"question": "世界处于什么时代？", "category": "世界观", "suggestions": ["中世纪", "文艺复兴", "工业革命前夕", "远古神话时代"]},
+                  {"question": "主要敌人/威胁？", "category": "情节", "suggestions": ["黑暗君主", "邪教组织", "异族入侵", "古老诅咒"]}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "dushi",
+          "name": "都市",
+          "description": "现代都市背景，涵盖生活、异能、情感等",
+          "level": 1,
+          "children": [
+            {
+              "id": "dushi-shenghuo",
+              "name": "都市生活",
+              "description": "偏现实向的都市故事",
+              "level": 2,
+              "children": [
+                {"id": "tag-zhichang", "name": "职场", "description": "以职场生态为背景", "level": 3},
+                {"id": "tag-shangzhan", "name": "商战", "description": "商业竞争、资本博弈", "level": 3},
+                {"id": "tag-zhongsheng", "name": "重生", "description": "主角重生回到过去", "level": 3}
+              ]
+            },
+            {
+              "id": "dushi-yineng",
+              "name": "都市异能",
+              "description": "现代都市+超能力/修炼",
+              "level": 2,
+              "children": [
+                {"id": "tag-wudao", "name": "武道", "description": "现代世界中武道修炼", "level": 3},
+                {"id": "tag-chaofan", "name": "超凡", "description": "超能力、异能者", "level": 3},
+                {"id": "tag-moshi", "name": "末世", "description": "末日背景下的生存冒险", "level": 3}
+              ]
+            },
+            {
+              "id": "dushi-qinggan",
+              "name": "都市情感",
+              "description": "以情感关系为主线",
+              "level": 2,
+              "children": [
+                {"id": "tag-zongcai", "name": "总裁", "description": "豪门/总裁类情感故事", "level": 3},
+                {"id": "tag-nuelsheng", "name": "虐恋", "description": "情感冲突强烈的故事", "level": 3}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "lishi",
+          "name": "历史",
+          "description": "以真实或架空历史为背景",
+          "level": 1,
+          "children": [
+            {
+              "id": "lishi-chuanyue",
+              "name": "历史穿越",
+              "description": "主角穿越到古代",
+              "level": 2,
+              "children": [
+                {"id": "tag-zhengdou", "name": "朝堂争霸", "description": "朝堂权谋、政治斗争", "level": 3},
+                {"id": "tag-zhongtian", "name": "种田争霸", "description": "从基础建设到争霸天下", "level": 3}
+              ]
+            },
+            {
+              "id": "lishi-jiasong",
+              "name": "架空历史",
+              "description": "基于真实历史但架空设定",
+              "level": 2,
+              "children": [
+                {"id": "tag-mougong", "name": "谋士", "description": "智谋为主、运筹帷幄", "level": 3},
+                {"id": "tag-jiangjun", "name": "将军", "description": "军功起家、征战天下", "level": 3}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "kehuan",
+          "name": "科幻",
+          "description": "科技幻想的未来世界",
+          "level": 1,
+          "children": [
+            {
+              "id": "kehuan-yinhe",
+              "name": "星际科幻",
+              "description": "星际文明、太空冒险",
+              "level": 2,
+              "children": [
+                {"id": "tag-xingjizhanzheng", "name": "星际战争", "description": "星际文明间的战争", "level": 3},
+                {"id": "tag-xingjimaoxian", "name": "星际冒险", "description": "探索未知星域", "level": 3}
+              ]
+            },
+            {
+              "id": "kehuan-weilai",
+              "name": "未来世界",
+              "description": "近未来/远未来的地球",
+              "level": 2,
+              "children": [
+                {"id": "tag-saiberpengke", "name": "赛博朋克", "description": "高科技低生活的反乌托邦", "level": 3},
+                {"id": "tag-moshikehuan", "name": "末世科幻", "description": "灾难后的废土世界", "level": 3}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "xuanyi",
+          "name": "悬疑",
+          "description": "悬疑推理类小说",
+          "level": 1,
+          "children": [
+            {
+              "id": "xuanyi-zhentan",
+              "name": "侦探推理",
+              "description": "以推理破案为主线",
+              "level": 2,
+              "children": [
+                {"id": "tag-benget", "name": "本格推理", "description": "注重逻辑推理和谜题设计", "level": 3},
+                {"id": "tag-shehui", "name": "社会派", "description": "关注社会问题和人性", "level": 3}
+              ]
+            },
+            {
+              "id": "xuanyi-lingyi",
+              "name": "灵异惊悚",
+              "description": "超自然恐怖悬疑",
+              "level": 2,
+              "children": [
+                {"id": "tag-kongbu", "name": "恐怖", "description": "以恐怖氛围为主", "level": 3},
+                {"id": "tag-lingyi", "name": "灵异", "description": "鬼怪/超自然事件", "level": 3}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "female",
+      "name": "女频",
+      "description": "面向女性读者的小说频道，涵盖言情、宫斗、仙侠等热门类型",
+      "level": 0,
+      "children": [
+        {
+          "id": "yanqing",
+          "name": "言情",
+          "description": "以爱情为主线的故事",
+          "level": 1,
+          "children": [
+            {
+              "id": "yanqing-xiandai",
+              "name": "现代言情",
+              "description": "现代背景的爱情故事",
+              "level": 2,
+              "children": [
+                {"id": "tag-bawangzongcai", "name": "霸道总裁", "description": "强势男主、甜宠/虐恋", "level": 3},
+                {"id": "tag-tianchong", "name": "甜宠文", "description": "甜蜜温馨的恋爱故事", "level": 3},
+                {"id": "tag-nuelsheng-nv", "name": "虐恋文", "description": "情感冲突强烈、虐心虐身", "level": 3}
+              ]
+            },
+            {
+              "id": "yanqing-gudai",
+              "name": "古代言情",
+              "description": "古代背景的爱情故事",
+              "level": 2,
+              "children": [
+                {"id": "tag-gongdou", "name": "宫斗", "description": "后宫争斗、权谋爱情", "level": 3},
+                {"id": "tag-zhaimen", "name": "宅斗", "description": "宅院内宅的权力争斗", "level": 3},
+                {"id": "tag-guyan", "name": "古言甜宠", "description": "古代背景的甜蜜爱情", "level": 3}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "nv-xianxia",
+          "name": "仙侠",
+          "description": "女频视角的仙侠修真",
+          "level": 1,
+          "children": [
+            {
+              "id": "nv-xianxia-xiuzhen",
+              "name": "女频修真",
+              "description": "女性主角的修仙之路",
+              "level": 2,
+              "children": [
+                {"id": "tag-shitu", "name": "师徒", "description": "师徒之间的情感纠葛", "level": 3},
+                {"id": "tag-niqiang", "name": "女强", "description": "女主强势崛起", "level": 3}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
