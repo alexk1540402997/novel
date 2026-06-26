@@ -289,7 +289,10 @@ $outline
     if (n != _novel) WidgetsBinding.instance.addPostFrameCallback((_) => _check());
     if (_novel == null) return const Center(child: Text('请先选择一部小说'));
 
-    return Row(children: [
+    return LayoutBuilder(builder: (ctx, constraints) {
+      final isWide = constraints.maxWidth > 600;
+      if (isWide) {
+        return Row(children: [
       // 左侧：章节列表
       SizedBox(
         width: 180,
@@ -420,6 +423,24 @@ $outline
         ),
       ),
     ]);
+      } else {
+        // 手机端：简单布局
+        return Column(children: [
+          Row(children: [
+            Expanded(child: FilledButton.icon(onPressed: _addChapter, icon: const Icon(Icons.add, size: 16), label: const Text('新章节'))),
+            const SizedBox(width: 8),
+            Expanded(child: DropdownButton<int?>(
+              value: _currentChapter, isExpanded: true,
+              hint: const Text('选章节', style: TextStyle(fontSize: 13)),
+              items: _chapterNums.map((n) => DropdownMenuItem(value: n, child: Text('第$n章', style: const TextStyle(fontSize: 13)))).toList(),
+              onChanged: (v) { if (v != null) _selectChapter(v); },
+            )),
+            IconButton(icon: const Icon(Icons.save), onPressed: _saveCurrent),
+          ]),
+          Expanded(child: TextField(controller: _textCtrl, maxLines: null, expands: true, textAlignVertical: TextAlignVertical.top, style: const TextStyle(fontSize: 15), decoration: const InputDecoration(hintText: '在此撰写...', border: InputBorder.none, contentPadding: EdgeInsets.all(12)))),
+        ]);
+      }
+    });
   }
 
   Widget _tip(String text) => Padding(

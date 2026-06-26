@@ -28,16 +28,39 @@ class ConfigService {
       final configPath = path.join(appDir.path, 'config.json');
       final configFile = File(configPath);
 
+      // 加载example配置用于合并新条目
+      final exampleConfig = await rootBundle.loadString(
+        'assets/config/config.example.json',
+      );
+      final exampleData = json.decode(exampleConfig);
+
       // 检查config.json是否存在
       if (!await configFile.exists()) {
-        // 从assets中读取config.example.json
-        final exampleConfig = await rootBundle.loadString(
-          'assets/config/config.example.json',
-        );
-
-        // 写入到应用文档目录
         await configFile.writeAsString(exampleConfig);
         LoggerService().logInfo('Created config.json from config.example.json');
+      } else {
+        // 合并新的大模型配置到已有config
+        final existingStr = await configFile.readAsString();
+        final existingData = json.decode(existingStr);
+        var updated = false;
+
+        // 合并 llm_configs
+        if (exampleData is Map && exampleData.containsKey('llm_configs')) {
+          existingData['llm_configs'] ??= {};
+          final exLLM = exampleData['llm_configs'] as Map;
+          for (final key in exLLM.keys) {
+            if (!(existingData['llm_configs'] as Map).containsKey(key)) {
+              (existingData['llm_configs'] as Map)[key] = exLLM[key];
+              updated = true;
+              LoggerService().logInfo('Added new LLM config: $key');
+            }
+          }
+        }
+
+        if (updated) {
+          await configFile.writeAsString(json.encode(existingData));
+          LoggerService().logInfo('Updated config.json with new model entries');
+        }
       }
 
       // 读取配置文件

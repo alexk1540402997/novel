@@ -5,6 +5,7 @@ import '../../presentation/widgets/navigation_drawer.dart';
 import '../../presentation/widgets/novel_selector_dropdown.dart';
 import '../../app/localizations/app_localizations.dart';
 import '../../domain/services/novel_folder_service.dart';
+import '../../domain/services/novel_creation_service.dart';
 import '../../domain/services/logger_service.dart';
 import 'outline_page.dart';
 import 'novel_architecture_page.dart'; // for SelectedNovelProvider
@@ -48,14 +49,16 @@ class _HomePageState extends State<HomePage> {
   Future<void> _showAddNovelDialog() async {
     final result = await Navigator.pushNamed(context, '/create_novel_wizard');
     if (result != null && result is Map<String, dynamic>) {
-      final novelName = result['name'] as String;
-      await _createNovelFolder(novelName);
+      await _createNovel(result);
     }
   }
 
-  /// 创建小说文件夹
-  Future<void> _createNovelFolder(String novelName) async {
+  /// 创建小说并初始化模板内容
+  Future<void> _createNovel(Map<String, dynamic> result) async {
+    final novelName = result['name'] as String;
+    final selection = result['selection'];
     final localizations = AppLocalizations.of(context);
+
     try {
       final novelsPath = await NovelFolderService().getNovelsFolderPath();
       final novelPath = '$novelsPath/$novelName';
@@ -67,16 +70,34 @@ class _HomePageState extends State<HomePage> {
             backgroundColor: Colors.red,
           ));
         }
-      } else {
-        await novelDir.create(recursive: true);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(localizations.translateWithArgs('novel_created_successfully', [novelName])),
-            backgroundColor: Colors.green,
-          ));
-        }
-        _novelSelectorKey.currentState?.refreshNovelFolders();
+        return;
       }
+
+      await novelDir.create(recursive: true);
+
+      // 从模板初始化世界书、角色库、大纲
+      if (selection != null) {
+        try {
+          final audience = selection.audience;
+          final sub = selection.subCategory;
+          await NovelCreationService().initializeFromTemplate(
+            novelName: novelName,
+            genreId: sub.id,
+            genrePath: '${audience.name} → ${selection.majorCategory.name} → ${sub.name}',
+            audienceName: audience.name,
+          );
+        } catch (e) {
+          LoggerService().logError('Template init failed: $e');
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(localizations.translateWithArgs('novel_created_successfully', [novelName])),
+          backgroundColor: Colors.green,
+        ));
+      }
+      _novelSelectorKey.currentState?.refreshNovelFolders();
     } catch (e) {
       LoggerService().logError('Failed to create novel: $e');
       if (mounted) {
@@ -257,139 +278,72 @@ class _HomePageState extends State<HomePage> {
       color: Theme.of(context).colorScheme.surfaceContainerLow,
       child: Column(
         children: [
-          // 面板标题
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHigh,
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.auto_awesome, color: Theme.of(context).primaryColor),
-                const SizedBox(width: 8),
-                Text('AI 写作助手', style: Theme.of(context).textTheme.titleMedium),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed: () {
-                    // 后续：收起/展开面板
-                  },
-                ),
-              ],
-            ),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHigh),
+            child: Row(children: [
+              Icon(Icons.auto_awesome, color: Theme.of(context).primaryColor),
+              const SizedBox(width: 8),
+              Text('AI 写作助手', style: Theme.of(context).textTheme.titleMedium),
+            ]),
           ),
           const Divider(height: 1),
-          // 功能快捷入口
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildAICard(
-                  icon: Icons.auto_stories,
-                  title: 'AI续写',
-                  subtitle: '基于上下文自动续写下一段',
-                  color: Colors.blue,
-                ),
-                const SizedBox(height: 12),
-                _buildAICard(
-                  icon: Icons.edit_note,
-                  title: 'AI润色',
-                  subtitle: '优化语句、调整文风、去AI味',
-                  color: Colors.teal,
-                ),
-                const SizedBox(height: 12),
-                _buildAICard(
-                  icon: Icons.lightbulb,
-                  title: '灵感建议',
-                  subtitle: '生成情节走向、角色对话灵感',
-                  color: Colors.orange,
-                ),
-                const SizedBox(height: 12),
-                _buildAICard(
-                  icon: Icons.checklist,
-                  title: '错字检查',
-                  subtitle: '扫描章节错别字和语法问题',
-                  color: Colors.purple,
-                ),
-                const SizedBox(height: 12),
-                _buildAICard(
-                  icon: Icons.summarize,
-                  title: '段落摘要',
-                  subtitle: '生成本章摘要方便上下文记忆',
-                  color: Colors.indigo,
-                ),
-                const Divider(height: 24),
-                // 当前项目信息
-                Text('📋 小说信息', style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 8),
-                _buildNovelInfoRow('频道', '-'),
-                _buildNovelInfoRow('类型', '-'),
-                _buildNovelInfoRow('总字数', '-'),
-                _buildNovelInfoRow('章节数', '-'),
-              ],
-            ),
+            child: ListView(padding: const EdgeInsets.all(12), children: [
+              _aiBtn(Icons.auto_stories, 'AI续写', '基于前文上下文自动续写下一段', Colors.blue, () => _onDestinationSelected(1)),
+              const SizedBox(height: 8),
+              _aiBtn(Icons.edit_note, 'AI润色', '优化当前选中文本的语句和文风', Colors.teal, () {
+                _onDestinationSelected(1);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请在章节写作页选中文本后使用润色功能'), duration: Duration(seconds: 2)));
+              }),
+              const SizedBox(height: 8),
+              _aiBtn(Icons.lightbulb, '灵感建议', '根据当前大纲生成剧情灵感', Colors.orange, () {
+                _onDestinationSelected(2); // 世界观库
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('灵感建议将在后续版本中接入AI'), duration: Duration(seconds: 2)));
+              }),
+              const SizedBox(height: 8),
+              _aiBtn(Icons.spellcheck, '错字检查', '扫描当前章节的错别字和语法', Colors.purple, () {
+                _onDestinationSelected(1);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已切换到章节写作页，点击🔍开始检查'), duration: Duration(seconds: 2)));
+              }),
+              const SizedBox(height: 8),
+              _aiBtn(Icons.summarize, '段落摘要', '生成当前章节摘要存入写作记忆', Colors.indigo, () => _onDestinationSelected(5)),
+              const Divider(height: 20),
+              Text('📋 当前小说', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              _infoRow('频道', '-'),
+              _infoRow('类型', '-'),
+              _infoRow('总章节', '0'),
+            ]),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAICard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-  }) {
+  Widget _aiBtn(IconData icon, String title, String sub, Color color, VoidCallback onTap) {
     return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          // 后续连接真实功能
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$title — 功能开发中'), duration: const Duration(seconds: 1)),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: color.withAlpha(30),
-                child: Icon(icon, size: 20, color: color),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
-                    Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+      elevation: 0, color: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: Colors.grey[200]!)),
+      child: InkWell(borderRadius: BorderRadius.circular(10), onTap: onTap,
+        child: Padding(padding: const EdgeInsets.all(10), child: Row(children: [
+          CircleAvatar(radius: 16, backgroundColor: color.withAlpha(30), child: Icon(icon, size: 18, color: color)),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+            Text(sub, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+          ])),
+        ])),
       ),
     );
   }
 
-  Widget _buildNovelInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(width: 60, child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600]))),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 12))),
-        ],
-      ),
-    );
-  }
+  Widget _infoRow(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(children: [
+      SizedBox(width: 55, child: Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600]))),
+      Expanded(child: Text(value, style: const TextStyle(fontSize: 11))),
+    ]),
+  );
+
 }
