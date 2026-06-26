@@ -88,33 +88,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // ===== 顶部导航栏 =====
-  PreferredSizeWidget _buildAppBar(AppLocalizations localizations, bool isCompact) {
-    return AppBar(
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(localizations.translate(_navItems[_selectedIndex].labelKey)),
-          const SizedBox(width: 12),
-          NovelSelectorDropdown(
-            key: _novelSelectorKey,
-            onSelected: (selectedFolder) {
-              if (selectedFolder != null) {
-                context.read<SelectedNovelProvider>().setSelectedNovel(selectedFolder);
-              }
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _showAddNovelDialog,
-            tooltip: localizations.translate('add_novel'),
-          ),
-        ],
-      ),
-      // 紧凑模式下，左侧显示抽屉菜单按钮
-      leading: isCompact ? null : null, // Builder会自动处理
-    );
-  }
 
   @override
   Widget build(BuildContext context) {

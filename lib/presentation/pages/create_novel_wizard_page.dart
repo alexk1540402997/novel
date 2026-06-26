@@ -196,7 +196,7 @@ class _CreateNovelWizardPageState extends State<CreateNovelWizardPage> {
     );
 
     if (tags.isEmpty) {
-      _nextStep();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _nextStep());
       return const SizedBox();
     }
 
