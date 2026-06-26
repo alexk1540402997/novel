@@ -11,6 +11,15 @@
             "timeout": 600,
             "interface_format": "OpenAI"
         },
+        "DeepSeek R1": {
+            "api_key": "",
+            "base_url": "https://api.deepseek.com/v1",
+            "model_name": "deepseek-reasoner",
+            "temperature": 0.7,
+            "max_tokens": 8192,
+            "timeout": 600,
+            "interface_format": "OpenAI"
+        },
         "GPT 5": {
             "api_key": "",
             "base_url": "https://api.openai.com/v1",
@@ -28,7 +37,50 @@
             "max_tokens": 32768,
             "timeout": 600,
             "interface_format": "OpenAI"
+        },
+        "Claude Opus 4.8": {
+            "api_key": "",
+            "base_url": "https://api.anthropic.com",
+            "model_name": "claude-opus-4-8",
+            "temperature": 0.7,
+            "max_tokens": 32768,
+            "timeout": 600,
+            "interface_format": "Anthropic"
+        },
+        "Claude Sonnet 4.6": {
+            "api_key": "",
+            "base_url": "https://api.anthropic.com",
+            "model_name": "claude-sonnet-4-6",
+            "temperature": 0.7,
+            "max_tokens": 32768,
+            "timeout": 600,
+            "interface_format": "Anthropic"
+        },
+        "Claude Fable 5": {
+            "api_key": "",
+            "base_url": "https://api.anthropic.com",
+            "model_name": "claude-fable-5",
+            "temperature": 0.7,
+            "max_tokens": 32768,
+            "timeout": 600,
+            "interface_format": "Anthropic"
+        },
+        "Claude Haiku 4.5": {
+            "api_key": "",
+            "base_url": "https://api.anthropic.com",
+            "model_name": "claude-haiku-4-5",
+            "temperature": 0.7,
+            "max_tokens": 32768,
+            "timeout": 600,
+            "interface_format": "Anthropic"
         }
+    },
+    "choose_configs": {
+        "prompt_draft_llm": "DeepSeek V3",
+        "chapter_outline_llm": "DeepSeek V3",
+        "architecture_llm": "Claude Sonnet 4.6",
+        "final_chapter_llm": "Claude Opus 4.8",
+        "consistency_review_llm": "DeepSeek V3"
     },
     "embedding_configs": {
         "OpenAI": {
@@ -51,13 +103,6 @@
         "key_items": "",
         "scene_location": "",
         "time_constraint": ""
-    },
-    "choose_configs": {
-        "prompt_draft_llm": "DeepSeek V3",
-        "chapter_outline_llm": "DeepSeek V3",
-        "architecture_llm": "Gemini 2.5 Pro",
-        "final_chapter_llm": "GPT 5",
-        "consistency_review_llm": "DeepSeek V3"
     },
     "proxy_setting": {
         "proxy_url": "127.0.0.1",

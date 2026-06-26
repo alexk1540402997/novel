@@ -35,20 +35,29 @@ class LLMService {
   /// 调用LLM并返回结果
   Future<String> callLLM(String prompt, String configName) async {
     LoggerService().logInfo('Calling LLM with prompt config: $configName');
-    
+    final config = _validateConfig(configName);
+    return await _client.callLLM(prompt, config);
+  }
+
+  /// 流式调用LLM
+  Stream<String> callLLMStream(String prompt, String configName) async* {
+    LoggerService().logInfo('Streaming LLM with config: $configName');
+    final config = _validateConfig(configName);
+    yield* _client.callLLMStream(prompt, config);
+  }
+
+  /// 验证并获取配置
+  LLMConfig _validateConfig(String configName) {
     final config = _getLLMConfig(configName);
     if (config == null) {
-      throw Exception('LLM configuration not found for: $configName');
+      throw Exception('LLM配置未找到: $configName');
     }
-
     if (config.apiKey.isEmpty) {
-      throw Exception('API key is required for LLM configuration: $configName');
+      throw Exception('请先设置API密钥: $configName');
     }
-
     if (config.baseUrl.isEmpty) {
-      throw Exception('Base URL is required for LLM configuration: $configName');
+      throw Exception('请先设置API地址: $configName');
     }
-
-    return await _client.callLLM(prompt, config);
+    return config;
   }
 }

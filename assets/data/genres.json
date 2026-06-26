@@ -3,13 +3,13 @@
     {
       "id": "male",
       "name": "男频",
-      "description": "面向男性读者的小说频道，涵盖玄幻、都市、历史、科幻等热门类型",
+      "description": "面向男性读者，主打热血、成长、争霸、升级等元素",
       "level": 0,
       "children": [
         {
           "id": "xuanhuan",
           "name": "玄幻",
-          "description": "东方玄幻世界观，修炼、宗门、天材地宝",
+          "description": "东方玄幻世界观，修炼、宗门、秘境、天材地宝",
           "level": 1,
           "children": [
             {
@@ -18,55 +18,119 @@
               "description": "以中国神话、道家修炼体系为基础的幻想世界",
               "level": 2,
               "children": [
-                {"id": "tag-xiuzhen", "name": "修真流", "description": "以道家修真为核心修炼体系", "level": 3},
-                {"id": "tag-honghuang", "name": "洪荒流", "description": "以洪荒时代为背景，先天生灵、天道争夺", "level": 3},
-                {"id": "tag-fanren", "name": "凡人流", "description": "主角出身平凡，靠机缘和努力一步步成长", "level": 3},
-                {"id": "tag-xitong", "name": "系统流", "description": "主角获得系统辅助修炼", "level": 3},
-                {"id": "tag-qihuan", "name": "气运流", "description": "以气运、命数为核心的修炼体系", "level": 3}
+                {"id": "tag-xiuzhen", "name": "修真流", "description": "以道家修真为核心修炼体系，炼气→筑基→金丹→元婴→化神→渡劫", "level": 3},
+                {"id": "tag-honghuang", "name": "洪荒流", "description": "洪荒时代背景，先天生灵、天道圣人、气运争夺", "level": 3},
+                {"id": "tag-fanren", "name": "凡人流", "description": "主角出身平凡，靠谨慎和机缘逐步成长", "level": 3},
+                {"id": "tag-xitong", "name": "系统流", "description": "主角获得系统辅助修炼成长", "level": 3},
+                {"id": "tag-feisheng", "name": "飞升流", "description": "下界→上界→仙界→神界的跨位面成长", "level": 3}
               ],
               "template": {
                 "outlines": [
-                  {"title": "经典东方玄幻大纲", "content": "## 总纲\n主角出身平凡/废材 → 获得奇遇/机缘 → 拜入宗门 → 宗门大比 → 外出历练 → 秘境夺宝 → 势力争斗 → 飞升/超脱\n\n## 分卷建议\n- 卷一：微末崛起（获得金手指/奇遇）\n- 卷二：初露锋芒（宗门/学院篇）\n- 卷三：名动一方（外出历练、秘境探险）\n- 卷四：龙争虎斗（势力之争、天骄争锋）\n- 卷五：凌驾九天（飞升/证道/超脱）"},
-                  {"title": "凡人流大纲", "content": "## 总纲\n凡人出身 → 偶然踏入修仙 → 谨慎求生 → 步步为营 → 历经磨难 → 最终超脱\n\n## 分卷建议\n- 卷一：凡人之躯（接触修仙世界）\n- 卷二：炼气筑基（宗门底层挣扎）\n- 卷三：金丹元婴（逐步崭露头角）\n- 卷四：化神炼虚（一方强者）\n- 卷五：渡劫飞升（超脱之路）"}
+                  {
+                    "title": "【经典主角成长线】草根逆袭之路",
+                    "content": "## 总纲\n主角出身低微(废材/凡人) → 获得金手指/奇遇 → 拜入宗门/势力 → 宗门大比崭露头角 → 外出历练遇险得宝 → 秘境争夺 → 势力大战 → 飞升/超脱\n\n## 分卷建议\n- 卷一「微末崛起」：天赋测试、意外得宝、初入修炼\n- 卷二「初露锋芒」：宗门篇、拜师学艺、同门切磋\n- 卷三「名动一方」：外出历练、秘境探险、邂逅红颜\n- 卷四「龙争虎斗」：天骄争锋、势力大战、恩怨纠葛\n- 卷五「君临天下」：渡劫飞升/证道称帝/超脱三界"
+                  },
+                  {
+                    "title": "【废材逆袭流】从底层到巅峰",
+                    "content": "## 总纲\n废材开局 → 被退婚/被驱逐 → 奇遇逆转 → 快速崛起 → 复仇打脸 → 逆天改命\n\n## 分卷建议\n- 卷一「废材之名」：被家族/宗门轻视、退婚羞辱\n- 卷二「逆转之机」：秘境获得传承、体质觉醒\n- 卷三「一路碾压」：打脸反派、重回家族/宗门\n- 卷四「登临绝顶」：复仇完成、成为至高存在"
+                  },
+                  {
+                    "title": "【势力建设流】从一人到一宗",
+                    "content": "## 总纲\n主角获得传承 → 建立势力/振兴宗门 → 招募人才 → 领地经营 → 宗门争霸 → 万宗来朝\n\n## 分卷建议\n- 卷一「单枪匹马」：主角个人成长\n- 卷二「开宗立派」：建立/振兴宗门\n- 卷三「开疆拓土」：势力扩张、招募强者\n- 卷四「霸业可期」：宗门大战、一统修炼界"
+                  }
                 ],
                 "worldbuilding": [
-                  {"category": "修炼体系", "title": "境界划分", "prompt": "请设定修炼境界等级（如：炼气→筑基→金丹→元婴→化神→炼虚→合体→大乘→渡劫）"},
-                  {"category": "势力格局", "title": "宗门/势力", "prompt": "请设定主要宗门、家族、势力及其关系"},
-                  {"category": "地理", "title": "世界地图", "prompt": "请设定世界地理（大陆、秘境、禁地等）"},
-                  {"category": "规则", "title": "天道规则", "prompt": "请设定核心世界观规则（修炼原理、灵气体系、因果/气运等）"}
+                  {"category": "修炼体系", "title": "境界等级划分", "prompt": "设定从凡人到最高境界的完整修炼等级体系（如：炼气→筑基→金丹→元婴→化神→炼虚→合体→大乘→渡劫→飞升），每境的寿元、战力、标志性能力"},
+                  {"category": "修炼体系", "title": "功法与技能", "prompt": "设定功法等级（天地玄黄/凡灵仙神）、武技/法术体系、炼丹/炼器/阵法/符箓等辅助技能"},
+                  {"category": "势力格局", "title": "宗门与势力", "prompt": "设定世界中的主要宗门、家族、皇朝、散修联盟，及其势力范围、高手数量、关系网络"},
+                  {"category": "势力格局", "title": "势力间关系", "prompt": "正邪对立、宗门竞争、联盟与敌对、上界对下界的干涉"},
+                  {"category": "地理环境", "title": "世界地图", "prompt": "设定世界地理结构（大陆/海域/秘境/禁地/洞天福地），各区域的灵气浓度、资源分布"},
+                  {"category": "地理环境", "title": "特殊区域", "prompt": "设定秘境试炼场、上古战场遗迹、传承之地、禁地（不可进入/极高危险区域）"},
+                  {"category": "天道规则", "title": "天地法则", "prompt": "设定修炼的核心原理（灵气/元气/真元体系）、天道意志、因果业力、气运之说"},
+                  {"category": "天道规则", "title": "种族与生灵", "prompt": "设定世界中的种族（人族/妖族/魔族/神族/龙族等），种族关系和天赋差异"},
+                  {"category": "经济系统", "title": "货币与资源", "prompt": "设定灵石/灵晶等货币体系，修炼资源（丹药/灵草/矿脉/秘境产出）的获取方式"},
+                  {"category": "时间尺度", "title": "历史与年表", "prompt": "设定世界的时间尺度（凡人百年vs修士万年）、重大历史事件（上古大战/万年前的浩劫）"}
                 ],
                 "questions": [
-                  {"question": "主角的金手指/奇遇是什么？", "category": "角色", "suggestions": ["上古传承", "神秘系统", "特殊体质", "强者灵魂附体", "重生记忆"]},
-                  {"question": "主角的性格定位？", "category": "角色", "suggestions": ["杀伐果断", "谨慎稳健", "热血冲动", "腹黑算计", "淡然超脱"]},
-                  {"question": "世界的灵气/修炼资源分布？", "category": "世界观", "suggestions": ["上界浓郁下界稀薄", "宗门垄断", "秘境产出", "灵石矿脉"]},
-                  {"question": "主要冲突来源？", "category": "情节", "suggestions": ["宗门争斗", "资源争夺", "复仇", "天骄争锋", "正邪对立"]},
-                  {"question": "是否有女主/感情线？", "category": "情节", "suggestions": ["单女主", "多女主", "无女主/无CP", "女主强大型", "女主辅助型"]}
+                  {"question": "主角的金手指/奇遇类型？", "category": "角色设定", "suggestions": ["上古大能传承", "神秘系统", "特殊体质觉醒", "重生/穿越记忆优势", "强者灵魂附体/指导", "神秘宝物/功法"]},
+                  {"question": "主角的性格定位？", "category": "角色设定", "suggestions": ["杀伐果断", "谨慎稳健（苟道）", "热血冲动", "腹黑算计", "冷傲孤高", "淡然超脱"]},
+                  {"question": "主角的出身背景？", "category": "角色设定", "suggestions": ["真正的凡人/废材", "被废的天才", "家族弃子", "穿越者（带记忆优势）", "重生者（预知未来）", "大能转世"]},
+                  {"question": "主要修炼方向？", "category": "修炼体系", "suggestions": ["纯武力修炼", "法术/神通为主", "肉身成圣", "剑修", "丹修/阵修", "全能型"]},
+                  {"question": "敌我对立格局？", "category": "情节冲突", "suggestions": ["正邪之争", "宗门/家族世仇", "人魔/人妖大战", "天道之争", "资源/气运争夺"]},
+                  {"question": "女性角色定位？", "category": "感情线", "suggestions": ["单女主（专一深情）", "多女主（后宫向）", "无女主（纯修炼）", "女主强大型（并肩作战）", "红颜知己型（多线但不收）"]},
+                  {"question": "世界灵气分布特点？", "category": "世界观", "suggestions": ["下界稀薄→上界浓郁（飞升流标配）", "宗门垄断灵气浓郁之地", "秘境中产出高浓度资源", "灵气复苏/消长周期"]},
+                  {"question": "故事节奏偏好？", "category": "写作风格", "suggestions": ["爽文快节奏（打脸装逼）", "稳扎稳打（逻辑严谨）", "慢热型（铺垫厚重）", "张弛有度（战斗+日常交替）"]},
+                  {"question": "是否有多位面/多界设定？", "category": "世界观", "suggestions": ["只有一界", "下界→上界（飞升流）", "三十六界/三千世界", "人界+仙界+神界"]},
+                  {"question": "修炼体系的创新点？", "category": "修炼体系", "suggestions": ["传统修真体系", "融入现代科学理解", "气运/命数为核心", "融合多个文明体系", "自创独特体系"]}
                 ]
               }
             },
             {
               "id": "xifang-xuanhuan",
               "name": "西方玄幻",
-              "description": "以西方奇幻元素为主，剑与魔法、龙与骑士",
+              "description": "西方奇幻元素，剑与魔法、龙与骑士、神祇与恶魔",
               "level": 2,
               "children": [
-                {"id": "tag-jianyumofa", "name": "剑与魔法", "description": "传统西式奇幻，骑士、法师、冒险", "level": 3},
-                {"id": "tag-shishi", "name": "史诗奇幻", "description": "宏大世界观、多线叙事、史诗感", "level": 3},
-                {"id": "tag-heian", "name": "黑暗奇幻", "description": "阴暗基调、残酷世界观", "level": 3}
+                {"id": "tag-jianyumofa", "name": "剑与魔法", "description": "传统西式奇幻，骑士、法师、冒险者公会", "level": 3},
+                {"id": "tag-shishiqihuan", "name": "史诗奇幻", "description": "宏大世界观、多条叙事线、史诗感战争", "level": 3},
+                {"id": "tag-heianqihuan", "name": "黑暗奇幻", "description": "阴暗残酷的世界基调、反英雄主角", "level": 3}
               ],
               "template": {
                 "outlines": [
-                  {"title": "经典西方玄幻大纲", "content": "## 总纲\n主角觉醒能力/获得传承 → 加入冒险者公会 → 探索地下城 → 对抗黑暗势力 → 拯救世界\n\n## 分卷建议\n- 卷一：命运之始（觉醒/奇遇）\n- 卷二：冒险启程（加入公会/组队）\n- 卷三：暗流涌动（发现阴谋）\n- 卷四：龙与魔法（史诗战争）\n- 卷五：命运决战（终极对决）"}
+                  {
+                    "title": "【经典冒险线】从冒险者到英雄",
+                    "content": "## 总纲\n主角觉醒/获得力量 → 加入冒险者公会 → 组队冒险 → 发现古老阴谋 → 对抗黑暗势力 → 拯救世界\n\n## 分卷建议\n- 卷一「命运之始」：能力觉醒/奇遇获得\n- 卷二「冒险启程」：加入公会、组队、初战\n- 卷三「暗流涌动」：发现阴谋、遗迹探索\n- 卷四「帝国风云」：势力战争、宫廷权谋\n- 卷五「终焉之战」：对抗黑暗君主/古神"
+                  },
+                  {
+                    "title": "【权谋争霸线】铁与血的王座之路",
+                    "content": "## 总纲\n贵族/王室成员 → 政治斗争 → 战争征服 → 统一大陆 → 建立帝国\n\n## 分卷建议\n- 卷一「继承者」：出身背景、权力角逐\n- 卷二「铁与火」：战争爆发、军事扩张\n- 卷三「王座之争」：宫廷权谋、联盟与背叛\n- 卷四「帝国时代」：统一后的治理与挑战"
+                  }
                 ],
                 "worldbuilding": [
-                  {"category": "魔法体系", "title": "魔法/力量体系", "prompt": "请设定魔法或力量等级体系"},
-                  {"category": "种族", "title": "智慧种族", "prompt": "请设定世界中的种族（人类、精灵、矮人、兽人等）"},
-                  {"category": "势力", "title": "国家与势力", "prompt": "请设定主要国家、王国、公会的格局"}
+                  {"category": "魔法体系", "title": "魔法等级与分类", "prompt": "设定魔法等级（学徒→法师→大法师→贤者→传奇）、魔法学派（元素/亡灵/空间/召唤/预言等）"},
+                  {"category": "魔法体系", "title": "魔力来源", "prompt": "魔力来源（魔网/魔素/信仰神赐/血脉/契约）、施法方式、魔法限制"},
+                  {"category": "种族设定", "title": "智慧种族", "prompt": "设定世界中的智慧种族（人类/精灵/矮人/兽人/龙族/亡灵/神族等），种族特征、寿命、天赋、关系"},
+                  {"category": "势力格局", "title": "国家与势力", "prompt": "设定王国/帝国/城邦/公会/教廷/暗影组织，势力范围、军事实力、外交关系"},
+                  {"category": "神祇体系", "title": "众神与信仰", "prompt": "设定神祇体系（创世神/主神/从神/半神）、教会组织、信仰之力、神恩/神罚机制"},
+                  {"category": "地理环境", "title": "世界地图", "prompt": "设定大陆/海域/岛屿/地下世界/异位面，各地的气候、资源、文化特征"},
+                  {"category": "历史事件", "title": "重大历史", "prompt": "设定关键历史事件（诸神之战/魔法浩劫/种族战争/帝国兴衰）"},
+                  {"category": "魔兽与怪物", "title": "魔兽体系", "prompt": "设定魔兽等级、魔核/魔晶体系、魔兽与人类的关系（魔兽/魔宠/魔族）"}
                 ],
                 "questions": [
-                  {"question": "主角的职业/定位？", "category": "角色", "suggestions": ["魔法师", "战士/骑士", "盗贼/刺客", "召唤师", "全系天才"]},
-                  {"question": "世界处于什么时代？", "category": "世界观", "suggestions": ["中世纪", "文艺复兴", "工业革命前夕", "远古神话时代"]},
-                  {"question": "主要敌人/威胁？", "category": "情节", "suggestions": ["黑暗君主", "邪教组织", "异族入侵", "古老诅咒"]}
+                  {"question": "主角的职业/力量类型？", "category": "角色设定", "suggestions": ["魔法师（元素/奥术/亡灵）", "战士/骑士（剑术/枪术）", "盗贼/刺客", "召唤师", "全系天才（极为罕见）", "神术师（信仰之力）"]},
+                  {"question": "世界科技/文明水平？", "category": "世界观", "suggestions": ["中世纪剑与魔法", "文艺复兴+魔法", "魔法工业革命", "远古神话时代", "后末日重建期"]},
+                  {"question": "主要敌对势力？", "category": "情节冲突", "suggestions": ["黑暗君主/魔王", "邪教/秘密组织", "异族入侵（兽人/亡灵）", "古老邪神/恶魔", "人类之间的战争"]},
+                  {"question": "是否有龙？龙的定位？", "category": "世界观", "suggestions": ["智慧龙族（可交流/同盟）", "野性魔兽", "远古神兽般的存在", "没有龙"]},
+                  {"question": "主角团队规模？", "category": "角色设定", "suggestions": ["冒险小队（4-6人）", "小型佣兵团", "大部队/军团", "独行侠"]}
+                ]
+              }
+            },
+            {
+              "id": "xiuzhen-modern",
+              "name": "现代修真",
+              "description": "现代背景下的修真故事，都市与修炼交织",
+              "level": 2,
+              "children": [
+                {"id": "tag-dushixiuzhen", "name": "都市修真", "description": "现代都市中隐藏修炼世界", "level": 3},
+                {"id": "tag-lingqifusu", "name": "灵气复苏", "description": "现代世界突然灵气爆发，全民修炼", "level": 3},
+                {"id": "tag-xiuzhenxueyuan", "name": "修真学院", "description": "以修真学院为核心的青春群像", "level": 3}
+              ],
+              "template": {
+                "outlines": [
+                  {
+                    "title": "【都市修真线】隐藏世界的修炼者",
+                    "content": "## 总纲\n普通人发现修炼世界 → 拜入修真势力 → 都市与修炼界双重生活 → 守护地球 → 发现更大世界\n\n## 分卷建议\n- 卷一「觉醒」：偶然接触修炼世界\n- 卷二「双重身份」：都市生活+修真冒险\n- 卷三「危机降临」：异界入侵/古魔复苏\n- 卷四「星际修真」：走向星空/链接更高文明"
+                  }
+                ],
+                "worldbuilding": [
+                  {"category": "世界结构", "title": "凡俗与修炼界", "prompt": "设定凡俗世界和修炼世界的关系（隐藏/半公开/公开），修炼者如何隐匿于现代社会"},
+                  {"category": "势力格局", "title": "现代修真势力", "prompt": "设定修炼势力（古老宗门/修真世家/国家特殊部门/散修联盟/邪修组织）"},
+                  {"category": "规则", "title": "灵气与现代科技", "prompt": "设定灵气与科技的关系（对立/兼容/互补），是否有科技修真（灵能科技）"}
+                ],
+                "questions": [
+                  {"question": "主角发现修炼世界的契机？", "category": "角色设定", "suggestions": ["意外获得修真功法", "被修真者收徒", "特殊体质觉醒", "重生/穿越带来的记忆", "灵气复苏后自然觉醒"]},
+                  {"question": "修炼界与凡俗界的关系？", "category": "世界观", "suggestions": ["完全隐匿（普通人不知）", "半公开（高层知晓）", "灵气复苏后公开化"]},
+                  {"question": "是否有星际/位面元素？", "category": "世界观", "suggestions": ["纯地球范围", "地球是修炼荒漠（连接上界）", "星际修真文明"]}
                 ]
               }
             }
@@ -75,124 +139,181 @@
         {
           "id": "dushi",
           "name": "都市",
-          "description": "现代都市背景，涵盖生活、异能、情感等",
+          "description": "现代都市背景，涵盖生活、异能、商战、重生等",
           "level": 1,
           "children": [
             {
               "id": "dushi-shenghuo",
               "name": "都市生活",
-              "description": "偏现实向的都市故事",
+              "description": "偏现实向的都市故事，职场、商战、娱乐",
               "level": 2,
               "children": [
-                {"id": "tag-zhichang", "name": "职场", "description": "以职场生态为背景", "level": 3},
-                {"id": "tag-shangzhan", "name": "商战", "description": "商业竞争、资本博弈", "level": 3},
-                {"id": "tag-zhongsheng", "name": "重生", "description": "主角重生回到过去", "level": 3}
-              ]
+                {"id": "tag-zhichang", "name": "职场", "description": "以职场生态为核心的故事", "level": 3},
+                {"id": "tag-shangzhan", "name": "商战", "description": "商业竞争、资本博弈、创业", "level": 3},
+                {"id": "tag-zhongsheng", "name": "重生", "description": "主角重生回到过去重新开始", "level": 3},
+                {"id": "tag-yule", "name": "娱乐", "description": "娱乐行业/明星/文化产业", "level": 3}
+              ],
+              "template": {
+                "outlines": [
+                  {
+                    "title": "【重生逆袭线】回到过去改变命运",
+                    "content": "## 总纲\n重生回到n年前 → 利用前世记忆 → 抓住机遇 → 避开陷阱 → 事业腾飞 → 弥补遗憾\n\n## 分卷建议\n- 卷一「归来」：重生、接受现实、确定目标\n- 卷二「布局」：利用记忆优势提前布局\n- 卷三「崛起」：事业起飞、初露锋芒\n- 卷四「巅峰」：登顶行业、人生圆满"
+                  }
+                ],
+                "worldbuilding": [
+                  {"category": "时代背景", "title": "时间设定", "prompt": "设定故事发生的具体时代（如2000年代、2010年代、近未来），科技水平和社会特征"},
+                  {"category": "产业设定", "title": "核心产业", "prompt": "设定主角所在的核心产业（互联网/金融/房地产/娱乐/实业），产业链条和竞争格局"},
+                  {"category": "城市设定", "title": "主要城市", "prompt": "设定主要活动城市，城市特征、经济地位、权力中心"}
+                ],
+                "questions": [
+                  {"question": "主角重生的时间跨度？", "category": "设定", "suggestions": ["重生到几年前", "重生到十几年前（青少年时期）", "重生到几十年前（完全不同时代）"]},
+                  {"question": "主角的核心优势？", "category": "角色设定", "suggestions": ["前世记忆和先知", "某项技能精通（技术/金融）", "人际关系的重新经营", "对重大事件的时间节点把握"]},
+                  {"question": "是否有感情线？", "category": "感情线", "suggestions": ["弥补前世感情遗憾", "新的感情线", "先事业后感情", "无感情线（纯事业向）"]}
+                ]
+              }
             },
             {
               "id": "dushi-yineng",
               "name": "都市异能",
-              "description": "现代都市+超能力/修炼",
+              "description": "现代都市+超自然力量",
               "level": 2,
               "children": [
-                {"id": "tag-wudao", "name": "武道", "description": "现代世界中武道修炼", "level": 3},
-                {"id": "tag-chaofan", "name": "超凡", "description": "超能力、异能者", "level": 3},
-                {"id": "tag-moshi", "name": "末世", "description": "末日背景下的生存冒险", "level": 3}
-              ]
-            },
-            {
-              "id": "dushi-qinggan",
-              "name": "都市情感",
-              "description": "以情感关系为主线",
-              "level": 2,
-              "children": [
-                {"id": "tag-zongcai", "name": "总裁", "description": "豪门/总裁类情感故事", "level": 3},
-                {"id": "tag-nuelsheng", "name": "虐恋", "description": "情感冲突强烈的故事", "level": 3}
-              ]
+                {"id": "tag-wudao", "name": "武道", "description": "现代社会中武道传承与修炼", "level": 3},
+                {"id": "tag-chaofan", "name": "超凡异能", "description": "各种超能力的觉醒与运用", "level": 3},
+                {"id": "tag-moshi", "name": "末世", "description": "末日背景下的生存与重建", "level": 3}
+              ],
+              "template": {
+                "outlines": [
+                  {
+                    "title": "【都市异能线】平凡世界的超能力者",
+                    "content": "## 总纲\n异能觉醒 → 接触隐秘世界 → 加入组织/独自行动 → 对抗反派势力 → 保护世界\n\n## 分卷建议\n- 卷一「觉醒」：异能出现、惊慌/适应\n- 卷二「隐秘世界」：发现异能者群体/组织\n- 卷三「暗战」：异能者之间的冲突与阴谋\n- 卷四「决战」：对抗终极威胁"
+                  }
+                ],
+                "worldbuilding": [
+                  {"category": "异能体系", "title": "异能分类", "prompt": "设定异能分类（元素系/强化系/精神系/时空系/特殊系），异能等级和成长方式"},
+                  {"category": "组织格局", "title": "异能组织", "prompt": "设定管理异能者的组织（官方机构/民间联盟/反派组织/国际势力）"},
+                  {"category": "规则", "title": "隐匿规则", "prompt": "设定异能者如何在普通人面前隐匿，如被发现的后处理机制"}
+                ],
+                "questions": [
+                  {"question": "主角异能类型？", "category": "角色设定", "suggestions": ["战斗型（元素/强化）", "辅助型（治疗/增幅）", "特殊型（时间/空间）", "多系异能（极为罕见）"]},
+                  {"question": "异能者与普通人的关系？", "category": "世界观", "suggestions": ["完全隐匿", "半公开（部分人知道）", "公开存在（异能社会）"]}
+                ]
+              }
             }
           ]
         },
         {
           "id": "lishi",
           "name": "历史",
-          "description": "以真实或架空历史为背景",
+          "description": "以真实或架空历史为背景的权谋、争霸、种田",
           "level": 1,
           "children": [
             {
               "id": "lishi-chuanyue",
               "name": "历史穿越",
-              "description": "主角穿越到古代",
+              "description": "现代人穿越到古代改变历史",
               "level": 2,
               "children": [
-                {"id": "tag-zhengdou", "name": "朝堂争霸", "description": "朝堂权谋、政治斗争", "level": 3},
-                {"id": "tag-zhongtian", "name": "种田争霸", "description": "从基础建设到争霸天下", "level": 3}
-              ]
-            },
+                {"id": "tag-zhengdou", "name": "朝堂权谋", "description": "朝堂之上的政治权谋斗争", "level": 3},
+                {"id": "tag-zhongtian", "name": "种田争霸", "description": "从民生基建入手逐步争霸天下", "level": 3},
+                {"id": "tag-zhengzhan", "name": "征战沙场", "description": "以军事征战为主线", "level": 3}
+              ],
+              "template": {
+                "outlines": [
+                  {
+                    "title": "【朝堂权谋线】步步为营的权力之路",
+                    "content": "## 总纲\n穿越到古代 → 科举/从军起步 → 在朝堂站稳脚跟 → 权谋博弈 → 位极人臣/改朝换代\n\n## 分卷建议\n- 卷一「初入」：穿越、适应古代生活\n- 卷二「起势」：科举/从军、崭露头角\n- 卷三「党争」：朝堂斗争、拉帮结派\n- 卷四「巅峰」：权倾朝野、实现抱负"
+                  },
+                  {
+                    "title": "【种田争霸线】从一地到天下",
+                    "content": "## 总纲\n穿到乱世/边地 → 发展民生/经济 → 练兵强军 → 吞并周边 → 统一天下\n\n## 分卷建议\n- 卷一「立足」：选定根据地、发展农业商业\n- 卷二「强军」：练兵、科技升级、防御外敌\n- 卷三「扩张」：吞并周边势力\n- 卷四「统一」：决战中原、建国建制"
+                  }
+                ],
+                "worldbuilding": [
+                  {"category": "朝代设定", "title": "历史背景", "prompt": "设定穿越到的朝代（真实朝代/架空朝代），政治制度（三省六部/内阁/军机处）"},
+                  {"category": "经济系统", "title": "经济基础", "prompt": "设定经济制度（农业/商业/手工业/矿冶），货币体系，税收制度"},
+                  {"category": "军事体系", "title": "军事制度", "prompt": "设定军事制度（府兵/募兵/卫所），兵种和装备水平，边防体系"},
+                  {"category": "社会结构", "title": "阶层与家族", "prompt": "设定社会阶层（士农工商/世家/寒门/平民），世家大族格局，科举制度"}
+                ],
+                "questions": [
+                  {"question": "穿越到哪个朝代？", "category": "设定", "suggestions": ["真实朝代（唐宋明等）", "架空朝代（基于真实改编）", "完全架空"]},
+                  {"question": "主角身份起点？", "category": "角色设定", "suggestions": ["寒门子弟", "没落世家", "普通平民（最底层）", "小官/小吏", "商贾之家"]},
+                  {"question": "是否带金手指？", "category": "设定", "suggestions": ["纯靠历史知识和智商", "带现代知识/技术", "带系统/空间", "预知历史走向"]},
+                  {"question": "最终目标？", "category": "情节", "suggestions": ["位极人臣（辅佐明君）", "改朝换代（自己称帝）", "富甲天下（商业帝国）", "著书立说（文化传承）"]}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "wuxia",
+          "name": "武侠",
+          "description": "中国武侠世界，江湖恩怨、侠义精神",
+          "level": 1,
+          "children": [
             {
-              "id": "lishi-jiasong",
-              "name": "架空历史",
-              "description": "基于真实历史但架空设定",
+              "id": "wuxia-chuantong",
+              "name": "传统武侠",
+              "description": "传统江湖背景的武侠故事",
               "level": 2,
               "children": [
-                {"id": "tag-mougong", "name": "谋士", "description": "智谋为主、运筹帷幄", "level": 3},
-                {"id": "tag-jiangjun", "name": "将军", "description": "军功起家、征战天下", "level": 3}
-              ]
+                {"id": "tag-jianghu", "name": "江湖恩仇", "description": "以江湖恩怨情仇为主线", "level": 3},
+                {"id": "tag-jianke", "name": "剑客江湖", "description": "以剑道修炼和江湖冒险为核心", "level": 3}
+              ],
+              "template": {
+                "outlines": [
+                  {
+                    "title": "【经典江湖线】恩怨情仇录",
+                    "content": "## 总纲\n初入江湖 → 拜师学艺 → 扬名立万 → 卷入大阴谋 → 决战正邪 → 归隐/成为传说\n\n## 分卷建议\n- 卷一「出山」：离开师门、初入江湖\n- 卷二「江湖」：结交好友、初遇敌人\n- 卷三「风云」：卷入江湖大事件\n- 卷四「决战」：正邪对决、恩怨了结"
+                  }
+                ],
+                "worldbuilding": [
+                  {"category": "武功体系", "title": "武功分类", "prompt": "设定武功体系（内功/外功/轻功/暗器/剑法/拳法等），武功等级，内力修炼方式"},
+                  {"category": "势力格局", "title": "江湖势力", "prompt": "设定正道门派/邪道势力/中立势力/朝廷力量/帮会，势力之间的关系和恩怨"},
+                  {"category": "江湖规则", "title": "江湖规矩", "prompt": "设定江湖中的不成文规矩（比武/复仇/师承/正邪之分/武林大会）"}
+                ],
+                "questions": [
+                  {"question": "主角的出身背景？", "category": "角色设定", "suggestions": ["名门正派弟子", "隐世高人传人", "武林世家子弟", "普通人家（意外踏入江湖）", "魔教/邪派出身"]},
+                  {"question": "主要武器？", "category": "角色设定", "suggestions": ["剑", "刀", "拳掌（无兵器）", "奇门兵器", "暗器"]},
+                  {"question": "江湖基调？", "category": "写作风格", "suggestions": ["传统侠义（侠之大者为国为民）", "新派武侠（更多个人情感）", "暗黑江湖（残酷现实）", "轻松诙谐"]}
+                ]
+              }
             }
           ]
         },
         {
           "id": "kehuan",
           "name": "科幻",
-          "description": "科技幻想的未来世界",
+          "description": "科技幻想的未来世界，星际文明、AI、赛博朋克",
           "level": 1,
           "children": [
             {
-              "id": "kehuan-yinhe",
+              "id": "kehuan-xingji",
               "name": "星际科幻",
-              "description": "星际文明、太空冒险",
+              "description": "星际文明、太空冒险、外星种族",
               "level": 2,
               "children": [
-                {"id": "tag-xingjizhanzheng", "name": "星际战争", "description": "星际文明间的战争", "level": 3},
-                {"id": "tag-xingjimaoxian", "name": "星际冒险", "description": "探索未知星域", "level": 3}
-              ]
-            },
-            {
-              "id": "kehuan-weilai",
-              "name": "未来世界",
-              "description": "近未来/远未来的地球",
-              "level": 2,
-              "children": [
-                {"id": "tag-saiberpengke", "name": "赛博朋克", "description": "高科技低生活的反乌托邦", "level": 3},
-                {"id": "tag-moshikehuan", "name": "末世科幻", "description": "灾难后的废土世界", "level": 3}
-              ]
-            }
-          ]
-        },
-        {
-          "id": "xuanyi",
-          "name": "悬疑",
-          "description": "悬疑推理类小说",
-          "level": 1,
-          "children": [
-            {
-              "id": "xuanyi-zhentan",
-              "name": "侦探推理",
-              "description": "以推理破案为主线",
-              "level": 2,
-              "children": [
-                {"id": "tag-benget", "name": "本格推理", "description": "注重逻辑推理和谜题设计", "level": 3},
-                {"id": "tag-shehui", "name": "社会派", "description": "关注社会问题和人性", "level": 3}
-              ]
-            },
-            {
-              "id": "xuanyi-lingyi",
-              "name": "灵异惊悚",
-              "description": "超自然恐怖悬疑",
-              "level": 2,
-              "children": [
-                {"id": "tag-kongbu", "name": "恐怖", "description": "以恐怖氛围为主", "level": 3},
-                {"id": "tag-lingyi", "name": "灵异", "description": "鬼怪/超自然事件", "level": 3}
-              ]
+                {"id": "tag-xingjizhanzheng", "name": "星际战争", "description": "星际文明之间的宏大战争", "level": 3},
+                {"id": "tag-xingjimaoxian", "name": "星际冒险", "description": "探索未知星域、发现新文明", "level": 3}
+              ],
+              "template": {
+                "outlines": [
+                  {
+                    "title": "【星际争霸线】从地球到银河帝国",
+                    "content": "## 总纲\n人类接触星际文明 → 地球加入星际社会 → 战争/联盟 → 人类崛起 → 银河霸主\n\n## 分卷建议\n- 卷一「接触」：发现外星文明/被外星发现\n- 卷二「星际」：进入星际社会、技术跳跃\n- 卷三「战争」：星际大战爆发\n- 卷四「新秩序」：战后格局、人类新定位"
+                  }
+                ],
+                "worldbuilding": [
+                  {"category": "科技体系", "title": "科技水平", "prompt": "设定科技水平（FTL超光速/能量武器/护盾/人工智能/基因改造/纳米技术），科技等级划分"},
+                  {"category": "星际格局", "title": "文明与势力", "prompt": "设定星际中的主要文明/帝国/联盟/贸易组织，文明类型（碳基/硅基/能量体）"},
+                  {"category": "军事体系", "title": "舰队与武器", "prompt": "设定星际舰队编制、舰船等级、武器类型（能量武器/动能武器/反物质/奇点武器）"}
+                ],
+                "questions": [
+                  {"question": "人类在星际中的地位？", "category": "世界观", "suggestions": ["新晋星际文明（弱势）", "中等文明（正在崛起）", "古老强大文明", "被奴役/濒危文明"]},
+                  {"question": "星际旅行的方式？", "category": "世界观", "suggestions": ["曲速/超光速引擎", "虫洞/星门网络", "跃迁/空间折叠", "世代飞船（慢速）"]},
+                  {"question": "主要敌对势力？", "category": "情节冲突", "suggestions": ["外星帝国入侵", "AI叛乱", "人类内战", "宇宙级灾难/天灾"]}
+                ]
+              }
             }
           ]
         }
@@ -201,7 +322,7 @@
     {
       "id": "female",
       "name": "女频",
-      "description": "面向女性读者的小说频道，涵盖言情、宫斗、仙侠等热门类型",
+      "description": "面向女性读者，主打情感、成长、独立、甜宠等元素",
       "level": 0,
       "children": [
         {
@@ -216,39 +337,96 @@
               "description": "现代背景的爱情故事",
               "level": 2,
               "children": [
-                {"id": "tag-bawangzongcai", "name": "霸道总裁", "description": "强势男主、甜宠/虐恋", "level": 3},
-                {"id": "tag-tianchong", "name": "甜宠文", "description": "甜蜜温馨的恋爱故事", "level": 3},
-                {"id": "tag-nuelsheng-nv", "name": "虐恋文", "description": "情感冲突强烈、虐心虐身", "level": 3}
-              ]
+                {"id": "tag-bazong", "name": "霸道总裁", "description": "强势男主×女主，先虐后甜/甜宠", "level": 3},
+                {"id": "tag-tianchong", "name": "甜宠文", "description": "全程甜蜜温馨的恋爱故事", "level": 3},
+                {"id": "tag-nuewen", "name": "虐恋文", "description": "高情感冲突、虐心虐身", "level": 3},
+                {"id": "tag-xianshi", "name": "现实向", "description": "偏现实主义的都市爱情", "level": 3}
+              ],
+              "template": {
+                "outlines": [
+                  {
+                    "title": "【甜宠文线】从相遇到相守",
+                    "content": "## 总纲\n男女主相遇 → 互相吸引 → 甜蜜互动 → 小虐怡情 → 误会解除 → 幸福结局\n\n## 分卷建议\n- 卷一「初遇」：男女主第一次相遇、初印象\n- 卷二「心动」：感情萌芽、暧昧拉扯\n- 卷三「考验」：外部压力/误会/小虐\n- 卷四「圆满」：解开误会、修成正果"
+                  }
+                ],
+                "worldbuilding": [
+                  {"category": "人物设定", "title": "男女主人设", "prompt": "设定男女主的身份背景（霸总/医生/律师/艺人/学生）、性格特点、外貌特征、家庭背景"},
+                  {"category": "场景设定", "title": "主要场景", "prompt": "设定故事发生的主要场景（城市/职场/校园/娱乐圈），场景对剧情的推动作用"},
+                  {"category": "关系网络", "title": "配角关系", "prompt": "设定关键配角（闺蜜/兄弟/情敌/家长/同事），他们对主角感情线的影响"}
+                ],
+                "questions": [
+                  {"question": "故事基调？", "category": "写作风格", "suggestions": ["全程高甜（无虐）", "先虐后甜", "甜中带虐", "现实向（平淡真实）"]},
+                  {"question": "男主类型？", "category": "角色设定", "suggestions": ["高冷霸总", "温柔医生", "傲娇毒舌", "阳光少年", "腹黑深沉"]},
+                  {"question": "女主性格？", "category": "角色设定", "suggestions": ["软萌可爱", "独立强势", "高冷御姐", "活泼开朗", "聪慧机敏"]},
+                  {"question": "感情线节奏？", "category": "情节", "suggestions": ["一见钟情（快节奏）", "日久生情（慢热）", "欢喜冤家→心动", "暗恋→双向奔赴"]}
+                ]
+              }
             },
             {
               "id": "yanqing-gudai",
               "name": "古代言情",
-              "description": "古代背景的爱情故事",
+              "description": "古代背景下的爱情故事",
               "level": 2,
               "children": [
-                {"id": "tag-gongdou", "name": "宫斗", "description": "后宫争斗、权谋爱情", "level": 3},
-                {"id": "tag-zhaimen", "name": "宅斗", "description": "宅院内宅的权力争斗", "level": 3},
-                {"id": "tag-guyan", "name": "古言甜宠", "description": "古代背景的甜蜜爱情", "level": 3}
-              ]
+                {"id": "tag-gongdou", "name": "宫斗", "description": "后宫中的权谋争斗与爱恨", "level": 3},
+                {"id": "tag-zhaimen", "name": "宅斗", "description": "望族宅院中的内宅争斗", "level": 3},
+                {"id": "tag-zhongtian-guyan", "name": "种田古言", "description": "古代农村/小镇的种田+言情", "level": 3}
+              ],
+              "template": {
+                "outlines": [
+                  {
+                    "title": "【宫斗线】深宫之中的爱与谋",
+                    "content": "## 总纲\n入宫（选秀/和亲/家族送）→ 后宫生存 → 拉拢盟友 → 斗倒对手 → 位至皇后/太后\n\n## 分卷建议\n- 卷一「入宫」：初入深宫、适应环境\n- 卷二「暗战」：后宫争斗开始、拉帮结派\n- 卷三「巅峰」：斗倒最大对手、登上后位\n- 卷四「抉择」：权力巅峰的感情与孤独"
+                  }
+                ],
+                "worldbuilding": [
+                  {"category": "宫廷制度", "title": "后宫制度", "prompt": "设定后宫等级（皇后/贵妃/妃/嫔/贵人/常在/答应）、晋升规则、侍寝制度"},
+                  {"category": "家族势力", "title": "前朝与后宫", "prompt": "设定朝堂上的家族势力与后宫嫔妃的关联，家族对后妃的支持与制约"},
+                  {"category": "宫规礼仪", "title": "宫廷规矩", "prompt": "设定宫廷礼仪、禁忌、惩罚制度，后妃的行为准则和生存法则"}
+                ],
+                "questions": [
+                  {"question": "女主入宫方式？", "category": "角色设定", "suggestions": ["正常选秀入宫", "家族送进宫中（政治联姻）", "和亲/被献", "意外入宫（非本意）"]},
+                  {"question": "女主性格？", "category": "角色设定", "suggestions": ["聪慧冷静型", "善良坚韧型", "腹黑算计型", "淡然佛系型"]},
+                  {"question": "感情归宿？", "category": "情节", "suggestions": ["最终得到皇帝真心", "与皇帝始终疏离", "爱上他人（非皇帝）", "独立自主不需要爱情"]}
+                ]
+              }
             }
           ]
         },
         {
-          "id": "nv-xianxia",
+          "id": "nvpin-xianxia",
           "name": "仙侠",
-          "description": "女频视角的仙侠修真",
+          "description": "女频视角的仙侠修真世界",
           "level": 1,
           "children": [
             {
               "id": "nv-xianxia-xiuzhen",
               "name": "女频修真",
-              "description": "女性主角的修仙之路",
+              "description": "女性主角的修仙成长之路",
               "level": 2,
               "children": [
-                {"id": "tag-shitu", "name": "师徒", "description": "师徒之间的情感纠葛", "level": 3},
-                {"id": "tag-niqiang", "name": "女强", "description": "女主强势崛起", "level": 3}
-              ]
+                {"id": "tag-shitu-nv", "name": "师徒恋", "description": "师徒之间的情深纠葛", "level": 3},
+                {"id": "tag-nvqiang", "name": "女强文", "description": "女主强势逆袭、碾压群雄", "level": 3},
+                {"id": "tag-xianxia-tianchong", "name": "仙侠甜宠", "description": "仙侠背景下的甜宠恋爱", "level": 3}
+              ],
+              "template": {
+                "outlines": [
+                  {
+                    "title": "【女强修仙线】一剑破万法",
+                    "content": "## 总纲\n女主天赋觉醒 → 拜入师门 → 修炼成长 → 门派争斗 → 飞升/超脱 → 与爱人并肩\n\n## 分卷建议\n- 卷一「觉醒」：灵根觉醒、初入修真\n- 卷二「成长」：修炼升级、结识伙伴\n- 卷三「风云」：卷入修真界大事件\n- 卷四「巅峰」：证道飞升、与爱人相守"
+                  }
+                ],
+                "worldbuilding": [
+                  {"category": "修炼体系", "title": "修真等级", "prompt": "设定女主的修炼等级体系，是否有特殊的女性修炼功法"},
+                  {"category": "势力格局", "title": "宗门格局", "prompt": "设定修真界的宗门势力，男女修比例，是否存在性别歧视/女性专属宗门"},
+                  {"category": "感情体系", "title": "道侣制度", "prompt": "设定修真界的感情规则（道侣/双修/情劫），感情是否影响修炼"}
+                ],
+                "questions": [
+                  {"question": "女主的修炼天赋？", "category": "角色设定", "suggestions": ["绝世天才", "废材逆袭（后天觉醒）", "中等天赋靠努力", "特殊体质（如天生道体）"]},
+                  {"question": "CP类型？", "category": "感情线", "suggestions": ["师徒CP", "强强CP（两个强者）", "养成CP", "1v1专一", "多男主/修罗场"]},
+                  {"question": "女主性格定位？", "category": "角色设定", "suggestions": ["杀伐果断女强人", "外冷内热剑修", "聪慧狡黠小狐狸", "淡然出尘仙子女"]}
+                ]
+              }
             }
           ]
         }
