@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
+import '../../app/app.dart';
 import '../../app/localizations/app_localizations.dart';
 import '../../utils/config_service.dart';
 import '../../utils/webdav_service.dart';
@@ -241,6 +243,24 @@ class _OtherSettingsPageState extends State<OtherSettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 主题设置
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(children: [
+                  const Icon(Icons.brightness_6, size: 28),
+                  const SizedBox(width: 12),
+                  const Expanded(child: Text('深色模式', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500))),
+                  Consumer<ThemeModeProvider>(
+                    builder: (ctx, tp, _) => Switch(
+                      value: tp.isDark,
+                      onChanged: (_) => tp.toggle(),
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 12),
             // WebDAV设置部分
             Card(
               child: Padding(
