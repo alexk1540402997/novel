@@ -6,7 +6,7 @@ import '../../presentation/widgets/novel_selector_dropdown.dart';
 import '../../app/localizations/app_localizations.dart';
 import '../../domain/services/novel_folder_service.dart';
 import '../../domain/services/logger_service.dart';
-import 'main_features_page.dart';
+import 'outline_page.dart';
 import 'novel_architecture_page.dart'; // for SelectedNovelProvider
 import 'worldbook_page.dart';
 import 'chapter_writer_page.dart';
@@ -30,7 +30,7 @@ class _HomePageState extends State<HomePage> {
 
   static const List<({IconData icon, String labelKey, Widget page})>
       _navItems = [
-    (icon: Icons.home, labelKey: 'nav_main_features', page: MainFeaturesPage()),
+    (icon: Icons.format_list_numbered, labelKey: 'nav_outline', page: OutlinePage()),
     (icon: Icons.public, labelKey: 'nav_worldbook', page: WorldbookPage()),
     (icon: Icons.edit_note, labelKey: 'nav_chapter_writer', page: ChapterWriterPage()),
     (icon: Icons.people, labelKey: 'nav_characters', page: CharacterPage()),
@@ -110,30 +110,27 @@ class _HomePageState extends State<HomePage> {
     final localizations = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Expanded(
-              child: Text(
-                localizations.translate(_navItems[_selectedIndex].labelKey),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: _showAddNovelDialog,
-              tooltip: localizations.translate('add_novel'),
-            ),
-          ],
+        title: NovelSelectorDropdown(
+          key: _novelSelectorKey,
+          onSelected: (folder) {
+            if (folder != null) {
+              context.read<SelectedNovelProvider>().setSelectedNovel(folder);
+            }
+          },
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _showAddNovelDialog,
+            tooltip: localizations.translate('add_novel'),
+          ),
+        ],
       ),
       drawer: AppNavigationDrawer(
         onDestinationSelected: _onDestinationSelected,
         selectedIndex: _selectedIndex,
       ),
-      body: SingleChildScrollView(
-        child: _navItems[_selectedIndex].page,
-      ),
+      body: _navItems[_selectedIndex].page,
     );
   }
 

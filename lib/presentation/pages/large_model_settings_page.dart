@@ -328,28 +328,22 @@ class _LargeModelSettingsPageState extends State<LargeModelSettingsPage> {
     if (!mounted) return;
     final localizations = AppLocalizations.of(context);
 
-    // 显示测试中提示
-    if (!mounted) return;
     final snackBar = SnackBar(
-      content: Text(localizations.translate('testing_config')),
+      content: Text('正在测试 $configName ...'),
       duration: const Duration(seconds: 10),
       behavior: SnackBarBehavior.floating,
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
     try {
-      // 导入LLM使用案例
       final llmUseCase = LLMUseCase();
-
-      // 发送测试请求
-      await llmUseCase.generateText('test', configName);
+      await llmUseCase.generateText('请回复"测试成功"两个字', configName);
 
       if (!mounted) return;
-      // 显示成功消息
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(localizations.translate('test_successful')),
+          content: Text('$configName 测试成功 ✅'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
@@ -357,14 +351,25 @@ class _LargeModelSettingsPageState extends State<LargeModelSettingsPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      // 显示错误消息
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${localizations.translate('test_failed')}: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-          behavior: SnackBarBehavior.floating,
+      // 显示详细错误
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('测试失败'),
+          content: SingleChildScrollView(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              const Text('可能的原因：', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text('1. API密钥错误或未填写'),
+              const Text('2. Base URL不正确 (DeepSeek应为: https://api.deepseek.com/v1)'),
+              const Text('3. 网络无法访问该API地址'),
+              const Text('4. 模型名称错误'),
+              const SizedBox(height: 12),
+              Text('错误详情: $e', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            ]),
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('知道了'))],
         ),
       );
     }

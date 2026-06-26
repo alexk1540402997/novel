@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/models/genre_category.dart';
 import '../../data/repositories/genre_repository.dart';
+import '../../data/repositories/template_repository.dart';
 
 /// 新建小说多步骤创作向导
 /// 步骤: 0级(男频/女频) → 1级(大类) → 2级(子类) → 3级(风格标签) → 模板预览+问题 → 命名
@@ -277,7 +278,7 @@ class _CreateNovelWizardPageState extends State<CreateNovelWizardPage> {
 
   // ===== 步骤5: 模板预览 + 问题清单 =====
   Widget _buildTemplateStep() {
-    final template = _selectedSub?.template;
+    final template = TemplateRepository().getTemplateOrDefault(_selectedSub?.id ?? '');
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -290,120 +291,69 @@ class _CreateNovelWizardPageState extends State<CreateNovelWizardPage> {
             const SizedBox(height: 8),
             Text(
               '${_selectedAudience?.name} → ${_selectedMajor?.name} → ${_selectedSub?.name}',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.grey[600]),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
             ),
             const Divider(height: 32),
 
-            // 大纲模板
-            if (template?.outlines.isNotEmpty ?? false) ...[
-              Text('📋 推荐大纲模板',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              ...template!.outlines.map((o) => Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ExpansionTile(
-                      title: Text(o.title),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: SelectableText(
-                            o.content,
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )),
-              const SizedBox(height: 24),
-            ],
+            if (template.hasContent) ...[
+              // 全书大纲
+              if (template.bookOutline.isNotEmpty) ...[
+                Text('📋 全书大纲模板', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Card(
+                  child: ExpansionTile(title: const Text('展开查看全书大纲'), children: [
+                    Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.bookOutline, style: const TextStyle(fontSize: 13, height: 1.6))),
+                  ]),
+                ),
+                const SizedBox(height: 24),
+              ],
 
-            // 世界观模板
-            if (template?.worldbuilding.isNotEmpty ?? false) ...[
-              Text('🌍 世界观设定模板',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              ...template!.worldbuilding.map((w) => ListTile(
-                    leading: const Icon(Icons.check_box_outline_blank),
-                    title: Text(w.title),
-                    subtitle: Text(w.prompt),
-                    dense: true,
-                  )),
-              const SizedBox(height: 24),
-            ],
+              // 分卷大纲
+              if (template.volumeOutlines.isNotEmpty) ...[
+                Text('📚 分卷大纲模板', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Card(
+                  child: ExpansionTile(title: const Text('展开查看分卷大纲'), children: [
+                    Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.volumeOutlines, style: const TextStyle(fontSize: 13, height: 1.6))),
+                  ]),
+                ),
+                const SizedBox(height: 24),
+              ],
 
-            // 问题清单
-            if (template?.questions.isNotEmpty ?? false) ...[
-              Text('❓ 创作方向参考问题（可选回答）',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              ...template!.questions.map((q) {
-                final controller =
-                    TextEditingController(text: _answers[q.question] ?? '');
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '[${q.category}] ${q.question}',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        if (q.suggestions.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: q.suggestions.map((s) => ActionChip(
-                              label: Text(s, style: const TextStyle(fontSize: 12)),
-                              onPressed: () {
-                                controller.text = s;
-                                _answers[q.question] = s;
-                              },
-                            )).toList(),
-                          ),
-                        ],
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: controller,
-                          decoration: const InputDecoration(
-                            hintText: '输入你的想法（可选）...',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          maxLines: 2,
-                          onChanged: (v) => _answers[q.question] = v,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ],
+              // 世界观架构
+              if (template.worldbuildingArchitecture.isNotEmpty) ...[
+                Text('🌍 核心世界观架构', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Card(
+                  child: ExpansionTile(title: const Text('展开查看世界观架构'), children: [
+                    Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.worldbuildingArchitecture, style: const TextStyle(fontSize: 13, height: 1.6))),
+                  ]),
+                ),
+                const SizedBox(height: 24),
+              ],
 
-            // 如果没有模板，显示提示
-            if (template == null ||
-                (template.outlines.isEmpty &&
-                    template.worldbuilding.isEmpty &&
-                    template.questions.isEmpty))
+              // 角色模板
+              if (template.characterTemplates.isNotEmpty) ...[
+                Text('👤 主要角色模板', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Card(
+                  child: ExpansionTile(title: const Text('展开查看角色模板'), children: [
+                    Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.characterTemplates, style: const TextStyle(fontSize: 13, height: 1.6))),
+                  ]),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ] else
               Center(
                 child: Padding(
                   padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    children: [
-                      Icon(Icons.auto_awesome, size: 48, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
-                      Text(
-                        '该类型暂无预设模板',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                      const Text('你可以直接创建空白项目，后续自行设定'),
-                    ],
-                  ),
+                  child: Column(children: [
+                    Icon(Icons.auto_awesome, size: 48, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    Text('该类型暂无预设模板', style: TextStyle(color: Colors.grey[600])),
+                    const SizedBox(height: 4),
+                    const Text('你可以直接创建空白项目，后续在\n大纲/世界观库/角色库中自行设定', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  ]),
                 ),
               ),
 
