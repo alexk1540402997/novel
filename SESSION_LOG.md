@@ -1,8 +1,9 @@
-# SESSION_LOG.md — AI小说创作PAD工具
+# SESSION_LOG.md — 「妙笔小说」AI小说创作PAD工具
 
 ## 会话时间
 - **开始日期：** 2026-06-25
-- **当前状态：** 环境搭建完成，等待编译验证
+- **最新更新：** 2026-06-27
+- **当前状态：** 本地自用版可用，模板打通+完整功能闭环
 
 ## 开发环境配置
 
@@ -13,62 +14,93 @@
 | Android SDK | `D:\Android\Sdk` (API 35/36) |
 | Gradle缓存 | `D:\gradle` |
 | AVD | `D:\.android\avd` |
-| ANDROID_HOME | `D:\Android\Sdk` |
-| GRADLE_USER_HOME | `D:\gradle` |
-| ANDROID_AVD_HOME | `D:\.android\avd` |
-| AVD-PAD | Pixel_Tablet_API_35 (2560x1600, x86_64) |
+| AVD-PAD | Pixel_Tablet_API_35 (2560x1600) |
 | AVD-手机 | Pixel_6_API_35 |
-
-C盘已释放至29GB可用（原100%满）。
+| 应用名称 | **妙笔小说** |
+| APK (arm64) | `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` (17.9MB) |
 
 ## 项目决策记录
 
-### 技术路线选择
-- **路径确认：** 路线B — 以开源Flutter项目 [AI_NovelGenerator_flutter](https://github.com/ahhhhhhhman/AI_NovelGenerator_flutter) 为基础进行魔改
-- **目标平台：** Android PAD（横屏优先），最低API 29 (Android 10)
-- **AI模型：** 优先接入 Claude API + DeepSeek API，兼容OpenAI格式
-- **开发环境：** Windows 11, Android Studio, Flutter SDK, Pixel_6_API_35 AVD
-- **项目路径：** `C:\Users\AlexK\Desktop\novel-app`（纯ASCII，避免Gradle构建问题）
+### 技术路线
+- **基础：** AI_NovelGenerator_flutter (Flutter 3.x + Provider + MD3)
+- **目标平台：** Android PAD (横屏优先) + 手机，最低API 29
+- **AI模型：** Anthropic Claude (Opus/Sonnet/Fable/Haiku) + DeepSeek V4 + GPT + Gemini
+- **存储：** 本地JSON文件（worldbook.json / characters.json / foreshadowings.json / outline.json / memory_index.json）
+- **云同步：** WebDAV
 
-### 个性化需求清单
+## 功能实现清单（14/14 完成）
 
-| # | 需求 | 状态 |
-|---|------|:--:|
-| 1 | 0级类目：男频/女频 | ✅ 已实现 (`genres.json` + Wizard) |
-| 2 | 3级网文类型类目体系 + 风格标签 | ✅ 已实现 |
-| 3 | 类型联动模板（大纲/世界观/架构） | ✅ 已实现 (模板预览+展开) |
-| 4 | 创作前问题清单（可选择性回答） | ✅ 已实现 (选择+自由输入) |
-| 5 | 模板可套用可自定义 | ✅ 已实现 |
-| 6 | 多小说并行（无数量限制） | 🟡 基础已有，需验证 |
-| 7 | 续写模式 + 上下文记忆系统 | ✅ 已实现 (ContextMemory+P1-4) |
-| 8 | 章节模式（给定大纲→输出正文） | ✅ 已实现 (P2 ChapterWriter) |
-| 9 | 世界观设定库（结构化） | ✅ 已实现 (WorldSetting+10分类+CRUD) |
-| 10 | 角色库（关系图谱+出场索引+AI生成） | ✅ 已实现 (NovelCharacter+关系+CRUD) |
-| 11 | 伏笔库（埋设/回收/关联/提醒） | ✅ 已实现 ⭐创新功能 |
-| 12 | 错字识别矫正（本地+AI混合） | ✅ 已实现 (200+错别字词库) |
-| 13 | PAD大屏自适应布局 | ✅ 已实现 (三档响应式: <600/600-840/≥840dp) |
-| 14 | Claude API接入 | ✅ 已实现 (Anthropic原生+OpenAI双格式, SSE流式) |
+| # | 功能 | 状态 | 详情 |
+|---|------|:--:|------|
+| 1 | 男频/女频类目 | ✅ | 0级频道 → 22大类 → 67子类 → 298标签 |
+| 2 | 创作向导 | ✅ | 6步流程：频道→类型→子类→标签→模板→命名 |
+| 3 | 写作模板 | ✅ | 12类目含全书大纲+分卷+世界观+角色模板 |
+| 4 | 模板注入世界书 | ✅ | 创建小说时模板自动写入worldbook.json+characters.json+outline.json |
+| 5 | 多小说管理 | ✅ | 无限量，文件夹隔离 |
+| 6 | 大纲系统 | ✅ | 树形大纲（全书→分卷→章节），可编辑保存 |
+| 7 | 章节写作 | ✅ | 章节列表+正文编辑器+AI大纲→正文生成 |
+| 8 | AI续写 | ✅ | 上下文记忆注入，OpenAI+Anthropic双格式 |
+| 9 | 世界观库 | ✅ | WorldSetting结构化，10分类+CRUD+搜索+状态 |
+| 10 | 角色库 | ✅ | NovelCharacter，关系类型+首出章节+详情弹窗 |
+| 11 | 伏笔库⭐ | ✅ | 埋设/回收位置+关联角色/设定+提醒 |
+| 12 | 上下文记忆 | ✅ | 章节摘要+角色出场+事件索引，AI续写注入 |
+| 13 | 错字矫正 | ✅ | 200+常见错别字词库，逐个替换/全部替换 |
+| 14 | PAD自适应 | ✅ | 3档响应式(<600/600-840/≥840dp) + 深色模式 |
 
-## 当前进度
+## 导航结构
 
-- [x] 项目目录创建
-- [x] Git仓库初始化
-- [x] CLAUDE.md 编写
-- [x] SESSION_LOG.md 创建
-- [ ] 安装 Flutter SDK
-- [ ] 创建 PAD AVD 模拟器
-- [ ] 克隆 AI_NovelGenerator_flutter 源码
-- [ ] 编译验证 APK
-- [ ] 魔改开始
+```
+📋 大纲 → ✏️ 章节写作 → 🌍 世界观库 → 👥 角色库
+→ 💡 伏笔库 → 🧠 写作记忆 → ⚙️ 设置 → 🤖 大模型
+```
 
-## 下一步操作
+## AI模型支持
 
-1. 安装 Flutter SDK（版本3.x稳定版）
-2. 创建 PAD 尺寸的 AVD（建议 Pixel Tablet, API 35）
-3. 克隆基础项目源码
-4. 编译验证基础APK可运行
-5. 开始P0改造（Claude API + PAD布局 + 类型类目）
+| 模型 | 格式 | 状态 |
+|------|------|:--:|
+| Claude Opus 4.8 | Anthropic原生 | ✅ |
+| Claude Sonnet 4.6 | Anthropic原生 | ✅ |
+| Claude Fable 5 | Anthropic原生 | ✅ |
+| Claude Haiku 4.5 | Anthropic原生 | ✅ |
+| DeepSeek V4 (推荐) | OpenAI兼容 | ✅ |
+| DeepSeek R1 (推理) | OpenAI兼容 | ✅ |
+| GPT-5 | OpenAI兼容 | ✅ |
+| Gemini 2.5 Pro | OpenAI兼容 | ✅ |
+
+## Git提交历史
+
+```
+6abd2fc 全面修复v2: 大纲+章节写作+模板打通+DeepSeekV4+AI面板
+759312f 紧急修复5个问题
+e0c9829 本地自用版优化: 改名+深色模式+Release编译
+efaf5b7 Bug修复
+81033d7 SESSION_LOG: P2完成
+85a41c8 P2: 章节模式+错字矫正
+ed5aba4 SESSION_LOG: P1-4
+37a17d1 P1-4 上下文记忆
+7ce2bb9 SESSION_LOG: P1-3
+6ad22ba P1-3 伏笔库⭐
+e92203d SESSION_LOG: P1-2
+95d79e9 P1-2 角色库
+1e60186 SESSION_LOG: P1-1
+a4efa8b P1-1 世界观库
+2956f4a SESSION_LOG: P0-3
+0a82ba1 P0-3 PAD布局
+3e1d70e P0-2 Claude API+模板
+76be0b3 P0-1 类型类目
+f475a6d SESSION_LOG更新
+dd213dc 初始化
+```
+
+## 待完善
+
+| 优先级 | 项目 |
+|:--:|------|
+| 🔴 | 剩余55个类目模板补齐 |
+| 🔴 | 模板文字去掉###标记，正式化 |
+| 🟡 | Release签名 |
+| 🟡 | 应用图标替换 |
+| 🟡 | 离线降级 |
 
 ---
-
-*最后更新：2026-06-25*
+*最后更新：2026-06-27*
