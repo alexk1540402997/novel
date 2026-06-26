@@ -7,7 +7,8 @@ import '../../app/localizations/app_localizations.dart';
 import '../../domain/services/novel_folder_service.dart';
 import '../../domain/services/logger_service.dart';
 import 'main_features_page.dart';
-import 'novel_architecture_page.dart';
+import 'novel_architecture_page.dart'; // for SelectedNovelProvider
+import 'worldbook_page.dart';
 import 'chapter_blueprint_page.dart';
 import 'character_status_page.dart';
 import 'full_text_overview_page.dart';
@@ -30,7 +31,7 @@ class _HomePageState extends State<HomePage> {
   static const List<({IconData icon, String labelKey, Widget page})>
       _navItems = [
     (icon: Icons.home, labelKey: 'nav_main_features', page: MainFeaturesPage()),
-    (icon: Icons.account_tree, labelKey: 'nav_novel_architecture', page: NovelArchitecturePage()),
+    (icon: Icons.public, labelKey: 'nav_worldbook', page: WorldbookPage()),
     (icon: Icons.article, labelKey: 'nav_chapter_blueprint', page: ChapterBlueprintPage()),
     (icon: Icons.person, labelKey: 'nav_character_status', page: CharacterStatusPage()),
     (icon: Icons.description, labelKey: 'nav_full_text_overview', page: FullTextOverviewPage()),
