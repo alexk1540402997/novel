@@ -27,40 +27,25 @@ class _HomePageState extends State<HomePage> {
   final GlobalKey<NovelSelectorDropdownState> _novelSelectorKey =
       GlobalKey<NovelSelectorDropdownState>();
 
-  final List<Widget> _pages = [
-    const MainFeaturesPage(),
-    const NovelArchitecturePage(),
-    const ChapterBlueprintPage(),
-    const CharacterStatusPage(),
-    const FullTextOverviewPage(),
-    const ChapterManagementPage(),
-    const OtherSettingsPage(),
-    const LargeModelSettingsPage(),
-  ];
-
-  // 页面标题列表，与导航项对应
-  final List<String> _pageTitles = [
-    'nav_main_features',
-    'nav_novel_architecture',
-    'nav_chapter_blueprint',
-    'nav_character_status',
-    'nav_full_text_overview',
-    'nav_chapter_management',
-    'nav_other_settings',
-    'nav_large_model_settings',
+  static const List<({IconData icon, String labelKey, Widget page})>
+      _navItems = [
+    (icon: Icons.home, labelKey: 'nav_main_features', page: MainFeaturesPage()),
+    (icon: Icons.account_tree, labelKey: 'nav_novel_architecture', page: NovelArchitecturePage()),
+    (icon: Icons.article, labelKey: 'nav_chapter_blueprint', page: ChapterBlueprintPage()),
+    (icon: Icons.person, labelKey: 'nav_character_status', page: CharacterStatusPage()),
+    (icon: Icons.description, labelKey: 'nav_full_text_overview', page: FullTextOverviewPage()),
+    (icon: Icons.library_books, labelKey: 'nav_chapter_management', page: ChapterManagementPage()),
+    (icon: Icons.settings, labelKey: 'nav_other_settings', page: OtherSettingsPage()),
+    (icon: Icons.settings_applications, labelKey: 'nav_large_model_settings', page: LargeModelSettingsPage()),
   ];
 
   void _onDestinationSelected(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
   }
 
   /// 打开创作向导
   Future<void> _showAddNovelDialog() async {
-    final result =
-        await Navigator.pushNamed(context, '/create_novel_wizard');
-
+    final result = await Navigator.pushNamed(context, '/create_novel_wizard');
     if (result != null && result is Map<String, dynamic>) {
       final novelName = result['name'] as String;
       await _createNovelFolder(novelName);
@@ -74,79 +59,92 @@ class _HomePageState extends State<HomePage> {
       final novelsPath = await NovelFolderService().getNovelsFolderPath();
       final novelPath = '$novelsPath/$novelName';
       final novelDir = Directory(novelPath);
-
       if (await novelDir.exists()) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                localizations.translateWithArgs('novel_already_exists', [
-                  novelName,
-                ]),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(localizations.translateWithArgs('novel_already_exists', [novelName])),
+            backgroundColor: Colors.red,
+          ));
         }
-        LoggerService().logWarning(
-          'Attempted to create novel folder that already exists: $novelName',
-        );
       } else {
         await novelDir.create(recursive: true);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                localizations.translateWithArgs('novel_created_successfully', [
-                  novelName,
-                ]),
-              ),
-              backgroundColor: Colors.green,
-            ),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(localizations.translateWithArgs('novel_created_successfully', [novelName])),
+            backgroundColor: Colors.green,
+          ));
         }
-        LoggerService().logInfo('Created new novel folder: $novelName');
         _novelSelectorKey.currentState?.refreshNovelFolders();
       }
     } catch (e) {
-      LoggerService().logError('Failed to create novel folder: $e');
+      LoggerService().logError('Failed to create novel: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              localizations.translateWithArgs('failed_to_create_novel', [
-                novelName,
-              ]),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(localizations.translateWithArgs('failed_to_create_novel', [novelName])),
+          backgroundColor: Colors.red,
+        ));
       }
     }
   }
 
+  // ===== 顶部导航栏 =====
+  PreferredSizeWidget _buildAppBar(AppLocalizations localizations, bool isCompact) {
+    return AppBar(
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(localizations.translate(_navItems[_selectedIndex].labelKey)),
+          const SizedBox(width: 12),
+          NovelSelectorDropdown(
+            key: _novelSelectorKey,
+            onSelected: (selectedFolder) {
+              if (selectedFolder != null) {
+                context.read<SelectedNovelProvider>().setSelectedNovel(selectedFolder);
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _showAddNovelDialog,
+            tooltip: localizations.translate('add_novel'),
+          ),
+        ],
+      ),
+      // 紧凑模式下，左侧显示抽屉菜单按钮
+      leading: isCompact ? null : null, // Builder会自动处理
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        if (width >= 840) {
+          return _buildExpandedLayout();
+        } else if (width >= 600) {
+          return _buildMediumLayout();
+        } else {
+          return _buildCompactLayout();
+        }
+      },
+    );
+  }
 
+  // ===== 紧凑布局（手机 <600dp）：抽屉 + 全屏内容 =====
+  Widget _buildCompactLayout() {
+    final localizations = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(localizations.translate(_pageTitles[_selectedIndex])),
-            const SizedBox(width: 16),
-            NovelSelectorDropdown(
-              key: _novelSelectorKey,
-              onSelected: (selectedFolder) {
-                // 处理选择的小说文件夹
-                if (selectedFolder != null) {
-                  // 更新选择状态
-                  context.read<SelectedNovelProvider>().setSelectedNovel(selectedFolder);
-                }
-              },
+            Expanded(
+              child: Text(
+                localizations.translate(_navItems[_selectedIndex].labelKey),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            const SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.add),
               onPressed: _showAddNovelDialog,
@@ -159,7 +157,268 @@ class _HomePageState extends State<HomePage> {
         onDestinationSelected: _onDestinationSelected,
         selectedIndex: _selectedIndex,
       ),
-      body: SingleChildScrollView(child: _pages[_selectedIndex]),
+      body: SingleChildScrollView(
+        child: _navItems[_selectedIndex].page,
+      ),
+    );
+  }
+
+  // ===== 中等布局（小PAD 600-840dp）：NavigationRail + 内容 =====
+  Widget _buildMediumLayout() {
+    final localizations = AppLocalizations.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Text(localizations.translate(_navItems[_selectedIndex].labelKey)),
+            const SizedBox(width: 12),
+            NovelSelectorDropdown(
+              key: _novelSelectorKey,
+              onSelected: (folder) {
+                if (folder != null) {
+                  context.read<SelectedNovelProvider>().setSelectedNovel(folder);
+                }
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: _showAddNovelDialog,
+              tooltip: localizations.translate('add_novel'),
+            ),
+          ],
+        ),
+      ),
+      body: Row(
+        children: [
+          NavigationRail(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: _onDestinationSelected,
+            labelType: NavigationRailLabelType.all,
+            leading: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Icon(Icons.auto_stories, color: Theme.of(context).primaryColor),
+            ),
+            destinations: _navItems
+                .map((item) => NavigationRailDestination(
+                      icon: Icon(item.icon),
+                      label: Text(localizations.translate(item.labelKey)),
+                    ))
+                .toList(),
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: SingleChildScrollView(
+              child: _navItems[_selectedIndex].page,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===== 扩展布局（大PAD ≥840dp）：Rail + 内容 + AI助手面板 =====
+  Widget _buildExpandedLayout() {
+    final localizations = AppLocalizations.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Text(localizations.translate(_navItems[_selectedIndex].labelKey)),
+            const SizedBox(width: 12),
+            NovelSelectorDropdown(
+              key: _novelSelectorKey,
+              onSelected: (folder) {
+                if (folder != null) {
+                  context.read<SelectedNovelProvider>().setSelectedNovel(folder);
+                }
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: _showAddNovelDialog,
+              tooltip: localizations.translate('add_novel'),
+            ),
+          ],
+        ),
+      ),
+      body: Row(
+        children: [
+          // 左侧导航栏
+          NavigationRail(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: _onDestinationSelected,
+            labelType: NavigationRailLabelType.all,
+            extended: false,
+            leading: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Icon(Icons.auto_stories, size: 32, color: Theme.of(context).primaryColor),
+            ),
+            destinations: _navItems
+                .map((item) => NavigationRailDestination(
+                      icon: Icon(item.icon),
+                      label: Text(localizations.translate(item.labelKey)),
+                    ))
+                .toList(),
+          ),
+          const VerticalDivider(width: 1),
+          // 主内容区
+          Expanded(
+            flex: 3,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: _navItems[_selectedIndex].page,
+            ),
+          ),
+          const VerticalDivider(width: 1),
+          // 右侧AI助手面板
+          Expanded(
+            flex: 2,
+            child: _buildAIAssistantPanel(localizations),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===== AI助手侧面板 =====
+  Widget _buildAIAssistantPanel(AppLocalizations localizations) {
+    return Container(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: Column(
+        children: [
+          // 面板标题
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHigh,
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.auto_awesome, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 8),
+                Text('AI 写作助手', style: Theme.of(context).textTheme.titleMedium),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () {
+                    // 后续：收起/展开面板
+                  },
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // 功能快捷入口
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildAICard(
+                  icon: Icons.auto_stories,
+                  title: 'AI续写',
+                  subtitle: '基于上下文自动续写下一段',
+                  color: Colors.blue,
+                ),
+                const SizedBox(height: 12),
+                _buildAICard(
+                  icon: Icons.edit_note,
+                  title: 'AI润色',
+                  subtitle: '优化语句、调整文风、去AI味',
+                  color: Colors.teal,
+                ),
+                const SizedBox(height: 12),
+                _buildAICard(
+                  icon: Icons.lightbulb,
+                  title: '灵感建议',
+                  subtitle: '生成情节走向、角色对话灵感',
+                  color: Colors.orange,
+                ),
+                const SizedBox(height: 12),
+                _buildAICard(
+                  icon: Icons.checklist,
+                  title: '错字检查',
+                  subtitle: '扫描章节错别字和语法问题',
+                  color: Colors.purple,
+                ),
+                const SizedBox(height: 12),
+                _buildAICard(
+                  icon: Icons.summarize,
+                  title: '段落摘要',
+                  subtitle: '生成本章摘要方便上下文记忆',
+                  color: Colors.indigo,
+                ),
+                const Divider(height: 24),
+                // 当前项目信息
+                Text('📋 小说信息', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                _buildNovelInfoRow('频道', '-'),
+                _buildNovelInfoRow('类型', '-'),
+                _buildNovelInfoRow('总字数', '-'),
+                _buildNovelInfoRow('章节数', '-'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAICard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          // 后续连接真实功能
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$title — 功能开发中'), duration: const Duration(seconds: 1)),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: color.withAlpha(30),
+                child: Icon(icon, size: 20, color: color),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                    Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNovelInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(width: 60, child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600]))),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 12))),
+        ],
+      ),
     );
   }
 }
