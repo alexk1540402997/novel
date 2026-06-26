@@ -2,7 +2,24 @@
 
 ## 会话时间
 - **开始日期：** 2026-06-25
-- **当前状态：** 项目初始化阶段
+- **当前状态：** 环境搭建完成，等待编译验证
+
+## 开发环境配置
+
+| 配置项 | 路径 |
+|------|------|
+| 项目根目录 | `C:\Users\AlexK\Desktop\novel-app` |
+| Flutter SDK | `D:\src\flutter` (3.38.7) |
+| Android SDK | `D:\Android\Sdk` (API 35/36) |
+| Gradle缓存 | `D:\gradle` |
+| AVD | `D:\.android\avd` |
+| ANDROID_HOME | `D:\Android\Sdk` |
+| GRADLE_USER_HOME | `D:\gradle` |
+| ANDROID_AVD_HOME | `D:\.android\avd` |
+| AVD-PAD | Pixel_Tablet_API_35 (2560x1600, x86_64) |
+| AVD-手机 | Pixel_6_API_35 |
+
+C盘已释放至29GB可用（原100%满）。
 
 ## 项目决策记录
 
