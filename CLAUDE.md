@@ -1,11 +1,21 @@
-# CLAUDE.md — AI小说创作PAD工具
+# CLAUDE.md — 「妙笔小说」AI小说创作PAD工具
+
+## ⚠️ 新会话必读
+
+**每次新会话启动后，必须先读取以下文件恢复上下文：**
+1. `SESSION_LOG.md` — 最新状态、22项问题清单、6轮执行计划
+2. `FINAL_ISSUE_LIST.md` — 详细问题描述（含文件位置和修复方向）
+3. 本 `CLAUDE.md` — 项目约定和构建配置
+
+**当前进度：** 质量审查完成，待从第一轮开始执行修复。
+**核心原则：** 每次修改后必须启动APP实际验证（截图+实操），禁止仅凭代码审计判断"可用"。
 
 ## 项目概述
 
 基于 Flutter 的 Android PAD 端 AI 辅助小说创作工具。以开源项目 [AI_NovelGenerator_flutter](https://github.com/ahhhhhhhman/AI_NovelGenerator_flutter) 为基础进行魔改，专为中文网文创作者设计。
 
 **GitHub仓库：** https://github.com/alexk1540402997/novel.git
-**项目路径：** `C:\Users\AlexK\Desktop\novel-app`
+**项目路径：** `C:\Users\AlexK\Desktop\novel-app`（⚠️ 工作目录必须在此路径，非 `AI小说创作`）
 
 ## 技术栈
 
@@ -75,6 +85,45 @@ flutter install
 # 直接运行
 flutter run
 ```
+
+### 启动模拟器
+```bash
+flutter emulators --launch Pixel_Tablet_API_35   # PAD
+flutter emulators --launch Pixel_6_API_35         # 手机
+```
+
+### 启动APP并验证（标准流程）
+```bash
+# 1. 确认模拟器在线
+flutter devices
+# 2. 构建并安装
+cd C:/Users/AlexK/Desktop/novel-app
+flutter build apk --debug
+adb -s emulator-5554 install -r build/app/outputs/flutter-apk/app-debug.apk
+# 3. 启动
+adb -s emulator-5554 shell am start -n com.example.ai_novelgenerator_flutter/.MainActivity
+# 4. 截图验证
+adb -s emulator-5554 exec-out screencap -p > screen.png
+```
+
+## 验证原则
+
+**严禁仅凭代码审计判断功能可用。** 每次修改后必须：
+1. 构建APK
+2. 安装到模拟器
+3. 实际操作验证（截图+UI dump）
+4. 确认修改生效后才能标记完成
+
+**已验证可用的标准：** 用户能实际使用，不是"代码逻辑正确"。
+
+## 辅助Skill
+
+本项目的修改流程使用以下skill配合：
+- `/verify` — 每次修改后验证
+- `/run` — 启动APP
+- `/code-review` — 修改前代码审查
+- `/security-review` — 发布前安全审查
+- `/pua-en` — 绩效管控，确保不糊弄
 
 ## 基础项目（魔改来源）
 
