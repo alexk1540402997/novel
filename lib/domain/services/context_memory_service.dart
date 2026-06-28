@@ -12,6 +12,7 @@ class ChapterMemory {
   List<String> worldSettingsUsed;
   List<String> keyEvents;
   int wordCount;
+  String userNotes; // 用户手动补充的备注
   DateTime updatedAt;
 
   ChapterMemory({
@@ -21,6 +22,7 @@ class ChapterMemory {
     this.worldSettingsUsed = const [],
     this.keyEvents = const [],
     this.wordCount = 0,
+    this.userNotes = '',
     DateTime? updatedAt,
   }) : updatedAt = updatedAt ?? DateTime.now();
 
@@ -32,13 +34,14 @@ class ChapterMemory {
       worldSettingsUsed: (json['worldSettingsUsed'] as List<dynamic>?)?.cast<String>() ?? [],
       keyEvents: (json['keyEvents'] as List<dynamic>?)?.cast<String>() ?? [],
       wordCount: json['wordCount'] ?? 0,
+      userNotes: json['userNotes'] ?? '',
       updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt']) ?? DateTime.now() : DateTime.now(),
     );
   }
   Map<String, dynamic> toJson() => {
     'chapterNumber': chapterNumber, 'summary': summary,
     'charactersAppeared': charactersAppeared, 'worldSettingsUsed': worldSettingsUsed,
-    'keyEvents': keyEvents, 'wordCount': wordCount, 'updatedAt': updatedAt.toIso8601String(),
+    'keyEvents': keyEvents, 'wordCount': wordCount, 'userNotes': userNotes, 'updatedAt': updatedAt.toIso8601String(),
   };
 }
 

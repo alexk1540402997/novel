@@ -536,19 +536,28 @@ $outline
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   child: Row(children: [
-                    Icon(Icons.auto_awesome, size: 16, color: Colors.teal[400]),
-                    const SizedBox(width: 6),
-                    Text('AI写作助手', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(color: Colors.teal.withAlpha(25), borderRadius: BorderRadius.circular(12)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.auto_awesome, size: 14, color: Colors.teal[600]),
+                        const SizedBox(width: 4),
+                        Text('AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.teal[600])),
+                      ]),
+                    ),
                     const Spacer(),
-                    _miniBtn('续写', () => _generateFromOutline()),
-                    const SizedBox(width: 6),
-                    _miniBtn('润色', _polishSelectedText),
-                    const SizedBox(width: 6),
-                    _miniBtn('错字', _checkTypos),
-                    const SizedBox(width: 6),
-                    _miniBtn('摘要', _autoSummary),
-                    const SizedBox(width: 6),
-                    IconButton(icon: const Icon(Icons.keyboard_arrow_up, size: 16), onPressed: () => setState(() => _chatExpanded = true), padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+                    _miniBtn('续写', () => _generateFromOutline(), icon: Icons.auto_stories, color: Colors.blue),
+                    const SizedBox(width: 4),
+                    _miniBtn('润色', _polishSelectedText, icon: Icons.edit_note, color: Colors.teal),
+                    const SizedBox(width: 4),
+                    _miniBtn('错字', _checkTypos, icon: Icons.spellcheck, color: Colors.purple),
+                    const SizedBox(width: 4),
+                    _miniBtn('摘要', _autoSummary, icon: Icons.summarize, color: Colors.indigo),
+                    const SizedBox(width: 4),
+                    Container(
+                      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
+                      child: IconButton(icon: const Icon(Icons.keyboard_arrow_up, size: 16), onPressed: () => setState(() => _chatExpanded = true), padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 24, minHeight: 24)),
+                    ),
                   ]),
                 ),
               // 展开态：大纲输入 + 按钮 + 生成结果
@@ -585,17 +594,17 @@ $outline
                           ),
                           const SizedBox(height: 4),
                           Row(children: [
-                            Expanded(child: _miniBtn('续写', () => _generateFromOutline())),
+                            Expanded(child: _miniBtn('续写', () => _generateFromOutline(), icon: Icons.auto_stories, color: Colors.blue)),
                             const SizedBox(width: 4),
-                            Expanded(child: _miniBtn('润色', _polishSelectedText)),
+                            Expanded(child: _miniBtn('润色', _polishSelectedText, icon: Icons.edit_note, color: Colors.teal)),
                           ]),
                           const SizedBox(height: 4),
                           Row(children: [
-                            Expanded(child: _miniBtn('错字', _checkTypos)),
+                            Expanded(child: _miniBtn('错字', _checkTypos, icon: Icons.spellcheck, color: Colors.purple)),
                             const SizedBox(width: 4),
-                            Expanded(child: _miniBtn('摘要', _autoSummary)),
+                            Expanded(child: _miniBtn('摘要', _autoSummary, icon: Icons.summarize, color: Colors.indigo)),
                             const SizedBox(width: 4),
-                            Expanded(child: _miniBtn('收起', () => setState(() => _chatExpanded = false))),
+                            Expanded(child: _miniBtn('收起', () => setState(() => _chatExpanded = false), icon: Icons.keyboard_arrow_down, color: Colors.grey)),
                           ]),
                           // 生成结果
                           if (_generatedText != null)
@@ -804,14 +813,22 @@ $outline
   }
 
   /// 迷你按钮（用于底部AI栏）
-  Widget _miniBtn(String label, VoidCallback? onPressed) {
+  Widget _miniBtn(String label, VoidCallback? onPressed, {IconData? icon, Color? color}) {
+    final c = color ?? Colors.teal;
     return SizedBox(
-      height: 28,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 28), textStyle: const TextStyle(fontSize: 11)),
-        child: Text(label),
-      ),
+      height: 30,
+      child: icon != null
+        ? TextButton.icon(
+            onPressed: onPressed,
+            icon: Icon(icon, size: 14, color: c),
+            label: Text(label, style: TextStyle(fontSize: 11, color: c)),
+            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), minimumSize: const Size(0, 30), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+          )
+        : TextButton(
+            onPressed: onPressed,
+            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), minimumSize: const Size(0, 30), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+            child: Text(label, style: TextStyle(fontSize: 11, color: c)),
+          ),
     );
   }
 

@@ -49,6 +49,7 @@ class _MemoryOverviewPageState extends State<MemoryOverviewPage> {
     String charStr = cm.charactersAppeared.join('、');
     String worldStr = cm.worldSettingsUsed.join('、');
     String eventStr = cm.keyEvents.join('、');
+    String userNotes = cm.userNotes;
     int wc = cm.wordCount;
     int selectedChapter = chapterNum;
     bool _aiLoading = false;
@@ -158,6 +159,8 @@ $chContent
           TextField(decoration: const InputDecoration(labelText:'关键事件(、分隔)',border:OutlineInputBorder(),isDense:true), controller:TextEditingController(text:eventStr), onChanged:(v)=>eventStr=v),
           const SizedBox(height:10),
           TextField(decoration: const InputDecoration(labelText:'字数',border:OutlineInputBorder(),isDense:true), controller:TextEditingController(text:wc>0?wc.toString():''), onChanged:(v)=>wc=int.tryParse(v)??0, keyboardType:TextInputType.number),
+          const SizedBox(height:10),
+          TextField(decoration: const InputDecoration(labelText:'手动备注（补充AI遗漏的要点）',border:OutlineInputBorder(),isDense:true, hintText:'在此补充任何遗漏的关键内容...'), controller:TextEditingController(text:userNotes), onChanged:(v)=>userNotes=v, maxLines:4),
         ])),
         actions: [
           TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('取消')),
@@ -166,7 +169,7 @@ $chContent
               charactersAppeared:charStr.split('、').map((e)=>e.trim()).where((e)=>e.isNotEmpty).toList(),
               worldSettingsUsed:worldStr.split('、').map((e)=>e.trim()).where((e)=>e.isNotEmpty).toList(),
               keyEvents:eventStr.split('、').map((e)=>e.trim()).where((e)=>e.isNotEmpty).toList(),
-              wordCount:wc);
+              wordCount:wc, userNotes:userNotes);
             Navigator.pop(ctx, m);
           }, child: const Text('保存')),
         ],

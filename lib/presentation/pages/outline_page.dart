@@ -47,9 +47,11 @@ class _OutlinePageState extends State<OutlinePage> {
   Future<void> _load() async {
     try {
       final fp = await _filePath(); final file = File(fp);
-      _root = await file.exists() ? OutlineNode.fromJson(jsonDecode(await file.readAsString())) : _defaultOutline();
-    } catch (_) { _root = _defaultOutline(); }
-    setState(() { _selectedPath = null; _collapsedPaths.clear(); });
+      final loaded = await file.exists() ? OutlineNode.fromJson(jsonDecode(await file.readAsString())) : _defaultOutline();
+      setState(() { _root = loaded; _selectedPath = null; _collapsedPaths.clear(); });
+    } catch (_) {
+      setState(() { _root = _defaultOutline(); _selectedPath = null; _collapsedPaths.clear(); });
+    }
   }
 
   OutlineNode _defaultOutline() => OutlineNode(title: '大纲', children: [
@@ -204,6 +206,11 @@ class _OutlinePageState extends State<OutlinePage> {
     final n = _nodeAt(path); if (n == null) return;
     _titleCtrl.text = n.title; _contentCtrl.text = n.content;
     setState(() => _selectedPath = path);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('已选中: ${n.title}'), backgroundColor: Colors.teal, duration: const Duration(seconds: 1)),
+      );
+    }
   }
 
   void _toggleCollapse(String path) {
@@ -235,22 +242,22 @@ class _OutlinePageState extends State<OutlinePage> {
     if (_novel == null) return const Center(child: Text('请先选择一部小说'));
     if (_root == null) return const Center(child: CircularProgressIndicator());
 
-    return LayoutBuilder(builder: (ctx, constraints) {
-      final isWide = constraints.maxWidth > 600;
-      if (isWide) {
-        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(width: 280, child: _buildTreePanel()),
-          const VerticalDivider(width: 1),
-          Expanded(child: _buildEditor()),
-        ]);
-      } else {
-        return Column(children: [
-          SizedBox(height: 220, child: _buildTreePanel()),
-          const Divider(height: 1),
-          Expanded(child: _buildEditor()),
-        ]);
-      }
-    });
+    final isWide = MediaQuery.of(context).size.width > 600;
+    if (isWide) {
+      return IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        SizedBox(width: 280, child: _buildTreePanel()),
+        const VerticalDivider(width: 1),
+        Expanded(child: _buildEditor()),
+      ]),
+    );
+    } else {
+      return Column(children: [
+        SizedBox(height: 220, child: _buildTreePanel()),
+        const Divider(height: 1),
+        Expanded(child: _buildEditor()),
+      ]);
+    }
   }
 
   Widget _buildTreePanel() => Column(children: [
