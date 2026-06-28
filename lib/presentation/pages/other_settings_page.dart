@@ -28,10 +28,36 @@ class _OtherSettingsPageState extends State<OtherSettingsPage> {
   String _backupResult = '';
   String _restoreResult = '';
 
+  // 编辑器设置（可调节控件）
+  double _fontSize = 15;
+  int _autoSaveSeconds = 30;
+  String _exportFormat = 'TXT';
+
+  static const _fontSizeMin = 12.0;
+  static const _fontSizeMax = 24.0;
+  static const _autoSaveOptions = [15, 30, 60, 120];
+  static const _exportFormatOptions = ['TXT', 'Markdown'];
+
   @override
   void initState() {
     super.initState();
     _loadWebDAVConfig();
+    _loadEditorSettings();
+  }
+
+  /// 加载编辑器设置
+  void _loadEditorSettings() {
+    final config = ConfigService().getAll();
+    setState(() {
+      _fontSize = (config?['editor_font_size'] as num?)?.toDouble() ?? 15;
+      _autoSaveSeconds = (config?['editor_auto_save_seconds'] as num?)?.toInt() ?? 30;
+      _exportFormat = (config?['editor_export_format'] as String?) ?? 'TXT';
+    });
+  }
+
+  /// 保存编辑器设置
+  Future<void> _saveEditorSetting(String key, dynamic value) async {
+    await ConfigService().set(key, value);
   }
 
   /// 加载WebDAV配置
@@ -429,6 +455,119 @@ class _OtherSettingsPageState extends State<OtherSettingsPage> {
                     ],
                   ],
                 ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // 编辑器设置
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Row(children: [
+                    Icon(Icons.text_fields, size: 22, color: Colors.teal),
+                    SizedBox(width: 8),
+                    Text('写作编辑器', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  ]),
+                  const SizedBox(height: 16),
+                  // 字体大小 — Slider
+                  Row(children: [
+                    const Icon(Icons.format_size, size: 18, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    const Text('字体大小', style: TextStyle(fontSize: 14)),
+                    const Spacer(),
+                    Text('${_fontSize.toInt()}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ]),
+                  Slider(
+                    value: _fontSize,
+                    min: _fontSizeMin,
+                    max: _fontSizeMax,
+                    divisions: (_fontSizeMax - _fontSizeMin).toInt(),
+                    label: '${_fontSize.toInt()}',
+                    onChanged: (v) {
+                      setState(() => _fontSize = v);
+                      _saveEditorSetting('editor_font_size', v.toInt());
+                    },
+                  ),
+                  const Divider(),
+                  // 自动保存间隔 — DropdownButton
+                  Row(children: [
+                    const Icon(Icons.timer, size: 18, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    const Text('自动保存间隔', style: TextStyle(fontSize: 14)),
+                    const Spacer(),
+                    DropdownButton<int>(
+                      value: _autoSaveOptions.contains(_autoSaveSeconds) ? _autoSaveSeconds : 30,
+                      underline: const SizedBox(),
+                      items: _autoSaveOptions.map((s) => DropdownMenuItem(
+                        value: s,
+                        child: Text('${s}秒', style: const TextStyle(fontSize: 14)),
+                      )).toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() => _autoSaveSeconds = v);
+                          _saveEditorSetting('editor_auto_save_seconds', v);
+                        }
+                      },
+                    ),
+                  ]),
+                  const Divider(),
+                  // 默认导出格式 — DropdownButton
+                  Row(children: [
+                    const Icon(Icons.file_present, size: 18, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    const Text('默认导出格式', style: TextStyle(fontSize: 14)),
+                    const Spacer(),
+                    DropdownButton<String>(
+                      value: _exportFormatOptions.contains(_exportFormat) ? _exportFormat : 'TXT',
+                      underline: const SizedBox(),
+                      items: _exportFormatOptions.map((f) => DropdownMenuItem(
+                        value: f,
+                        child: Text(f, style: const TextStyle(fontSize: 14)),
+                      )).toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() => _exportFormat = v);
+                          _saveEditorSetting('editor_export_format', v);
+                        }
+                      },
+                    ),
+                  ]),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // WebDAV说明
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Row(children: [
+                    Icon(Icons.info_outline, size: 22, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('什么是WebDAV？', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  ]),
+                  const SizedBox(height: 8),
+                  Text('WebDAV可将你的小说数据备份到云盘（支持坚果云、NextCloud、群晖NAS等）。配置后使用备份/恢复功能即可在多设备间同步。',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[700], height: 1.5)),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // 关于
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Row(children: [
+                    Icon(Icons.info, size: 22),
+                    SizedBox(width: 8),
+                    Text('关于妙笔小说', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  ]),
+                  const SizedBox(height: 8),
+                  Text('版本 1.0.0 · Flutter 3.38 · Android PAD', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  const SizedBox(height: 4),
+                  Text('面向中文网文创作者的AI辅助写作工具', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                ]),
               ),
             ),
           ],

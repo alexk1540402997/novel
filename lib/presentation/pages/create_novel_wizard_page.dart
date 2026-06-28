@@ -280,94 +280,107 @@ class _CreateNovelWizardPageState extends State<CreateNovelWizardPage> {
   Widget _buildTemplateStep() {
     final template = TemplateRepository().getTemplateOrDefault(_selectedSub?.id ?? '');
 
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('模板与设定参考',
-                style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 8),
-            Text(
-              '${_selectedAudience?.name} → ${_selectedMajor?.name} → ${_selectedSub?.name}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('模板与设定参考',
+                    style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 8),
+                Text(
+                  '${_selectedAudience?.name} → ${_selectedMajor?.name} → ${_selectedSub?.name}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                ),
+                const Divider(height: 32),
+
+                if (template.hasContent) ...[
+                  // 全书大纲
+                  if (template.bookOutline.isNotEmpty) ...[
+                    Text('📋 全书大纲模板', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    Card(
+                      child: ExpansionTile(title: const Text('展开查看全书大纲'), children: [
+                        Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.bookOutline, style: const TextStyle(fontSize: 13, height: 1.6))),
+                      ]),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // 分卷大纲
+                  if (template.volumeOutlines.isNotEmpty) ...[
+                    Text('📚 分卷大纲模板', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    Card(
+                      child: ExpansionTile(title: const Text('展开查看分卷大纲'), children: [
+                        Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.volumeOutlines, style: const TextStyle(fontSize: 13, height: 1.6))),
+                      ]),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // 世界观架构
+                  if (template.worldbuildingArchitecture.isNotEmpty) ...[
+                    Text('🌍 核心世界观架构', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    Card(
+                      child: ExpansionTile(title: const Text('展开查看世界观架构'), children: [
+                        Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.worldbuildingArchitecture, style: const TextStyle(fontSize: 13, height: 1.6))),
+                      ]),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // 角色模板
+                  if (template.characterTemplates.isNotEmpty) ...[
+                    Text('👤 主要角色模板', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    Card(
+                      child: ExpansionTile(title: const Text('展开查看角色模板'), children: [
+                        Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.characterTemplates, style: const TextStyle(fontSize: 13, height: 1.6))),
+                      ]),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ] else
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(children: [
+                        Icon(Icons.auto_awesome, size: 48, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text('该类型暂无预设模板', style: TextStyle(color: Colors.grey[600])),
+                        const SizedBox(height: 4),
+                        const Text('你可以直接创建空白项目，后续在\n大纲/世界观库/角色库中自行设定', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 13)),
+                      ]),
+                    ),
+                  ),
+              ],
             ),
-            const Divider(height: 32),
-
-            if (template.hasContent) ...[
-              // 全书大纲
-              if (template.bookOutline.isNotEmpty) ...[
-                Text('📋 全书大纲模板', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                Card(
-                  child: ExpansionTile(title: const Text('展开查看全书大纲'), children: [
-                    Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.bookOutline, style: const TextStyle(fontSize: 13, height: 1.6))),
-                  ]),
-                ),
-                const SizedBox(height: 24),
-              ],
-
-              // 分卷大纲
-              if (template.volumeOutlines.isNotEmpty) ...[
-                Text('📚 分卷大纲模板', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                Card(
-                  child: ExpansionTile(title: const Text('展开查看分卷大纲'), children: [
-                    Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.volumeOutlines, style: const TextStyle(fontSize: 13, height: 1.6))),
-                  ]),
-                ),
-                const SizedBox(height: 24),
-              ],
-
-              // 世界观架构
-              if (template.worldbuildingArchitecture.isNotEmpty) ...[
-                Text('🌍 核心世界观架构', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                Card(
-                  child: ExpansionTile(title: const Text('展开查看世界观架构'), children: [
-                    Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.worldbuildingArchitecture, style: const TextStyle(fontSize: 13, height: 1.6))),
-                  ]),
-                ),
-                const SizedBox(height: 24),
-              ],
-
-              // 角色模板
-              if (template.characterTemplates.isNotEmpty) ...[
-                Text('👤 主要角色模板', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                Card(
-                  child: ExpansionTile(title: const Text('展开查看角色模板'), children: [
-                    Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.characterTemplates, style: const TextStyle(fontSize: 13, height: 1.6))),
-                  ]),
-                ),
-                const SizedBox(height: 24),
-              ],
-            ] else
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(children: [
-                    Icon(Icons.auto_awesome, size: 48, color: Colors.grey[400]),
-                    const SizedBox(height: 16),
-                    Text('该类型暂无预设模板', style: TextStyle(color: Colors.grey[600])),
-                    const SizedBox(height: 4),
-                    const Text('你可以直接创建空白项目，后续在\n大纲/世界观库/角色库中自行设定', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 13)),
-                  ]),
-                ),
-              ),
-
-            const SizedBox(height: 24),
-            Center(
-              child: FilledButton.icon(
-                onPressed: _nextStep,
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('继续'),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        // 按钮固定底部
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            border: Border(top: BorderSide(color: Colors.grey[200]!)),
+          ),
+          child: Center(
+            child: FilledButton.icon(
+              onPressed: _nextStep,
+              icon: const Icon(Icons.arrow_forward),
+              label: const Text('继续'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -514,75 +527,170 @@ class _CreateNovelWizardPageState extends State<CreateNovelWizardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          Text(subtitle,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.grey[600])),
-          const SizedBox(height: 24),
-          Expanded(
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 2.2,
+          Row(children: [
+            Icon(_iconForLevel(items.isNotEmpty ? items.first.level : 1), color: color, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 4),
+                Text(subtitle,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600])),
+              ]),
+            ),
+            // 数量标签
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withAlpha(25),
+                borderRadius: BorderRadius.circular(12),
               ),
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final item = items[index];
-                final isSelected = selectedItem?.id == item.id;
-                return Card(
-                  elevation: isSelected ? 4 : 1,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                      color: isSelected ? color : Colors.transparent,
-                      width: 2,
-                    ),
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => onSelected(item),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            item.name,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight:
-                                  isSelected ? FontWeight.bold : FontWeight.w500,
-                              color: isSelected ? color : null,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Expanded(
-                            child: Text(
-                              item.description,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+              child: Text('${items.length} 个选项', style: TextStyle(fontSize: 12, color: color)),
+            ),
+          ]),
+          const SizedBox(height: 20),
+          Expanded(
+            child: LayoutBuilder(builder: (ctx, constraints) {
+              final crossAxisCount = constraints.maxWidth > 500 ? 3 : 2;
+              final aspectRatio = constraints.maxWidth > 500 ? 1.6 : 2.0;
+              return GridView.builder(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: aspectRatio,
+                ),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  final isSelected = selectedItem?.id == item.id;
+                  final catIcon = _iconForCategory(item.name, item.level);
+                  final hasTemplate = item.template != null;
+                  final hasChildren = item.children.isNotEmpty;
+                  return Card(
+                    elevation: isSelected ? 4 : 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(
+                        color: isSelected ? color : Colors.grey[200]!,
+                        width: isSelected ? 2.5 : 1,
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
+                    color: isSelected ? color.withAlpha(12) : null,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => onSelected(item),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 头部：图标 + 名称
+                            Row(children: [
+                              Container(
+                                width: 40, height: 40,
+                                decoration: BoxDecoration(
+                                  color: isSelected ? color.withAlpha(40) : Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(catIcon, size: 22, color: isSelected ? color : Colors.grey[600]),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Text(
+                                    item.name,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: isSelected ? color : null,
+                                    ),
+                                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (isSelected)
+                                    Text('已选中', style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w500)),
+                                ]),
+                              ),
+                              if (isSelected)
+                                Icon(Icons.check_circle, size: 22, color: color),
+                            ]),
+                            const SizedBox(height: 10),
+                            // 描述
+                            Expanded(
+                              child: Text(
+                                item.description,
+                                style: TextStyle(fontSize: 12, color: Colors.grey[600], height: 1.4),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // 底部标签
+                            Row(children: [
+                              if (hasTemplate)
+                                _infoTag('有模板', Colors.green),
+                              if (hasChildren)
+                                _infoTag('${item.children.length} 子类', Colors.blue),
+                              if (!hasTemplate && !hasChildren)
+                                const Spacer(),
+                              Icon(Icons.arrow_forward_ios, size: 12, color: isSelected ? color : Colors.grey[400]),
+                            ]),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            }),
           ),
         ],
       ),
     );
+  }
+
+  Widget _infoTag(String label, Color color) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    margin: const EdgeInsets.only(right: 6),
+    decoration: BoxDecoration(
+      color: color.withAlpha(20),
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Text(label, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w500)),
+  );
+
+  IconData _iconForLevel(int level) {
+    switch (level) {
+      case 0: return Icons.group;
+      case 1: return Icons.category;
+      case 2: return Icons.style;
+      case 3: return Icons.label;
+      default: return Icons.auto_stories;
+    }
+  }
+
+  IconData _iconForCategory(String name, int level) {
+    final n = name.toLowerCase();
+    if (n.contains('玄幻') || n.contains('仙侠') || n.contains('武侠')) return Icons.auto_fix_high;
+    if (n.contains('都市') || n.contains('现实') || n.contains('职场')) return Icons.apartment;
+    if (n.contains('历史') || n.contains('古代')) return Icons.history_edu;
+    if (n.contains('科幻') || n.contains('末世')) return Icons.science;
+    if (n.contains('悬疑') || n.contains('恐怖') || n.contains('灵异')) return Icons.psychology;
+    if (n.contains('游戏') || n.contains('电竞')) return Icons.sports_esports;
+    if (n.contains('军事')) return Icons.shield;
+    if (n.contains('体育')) return Icons.sports;
+    if (n.contains('言情') || n.contains('纯爱') || n.contains('恋爱')) return Icons.favorite;
+    if (n.contains('轻小说') || n.contains('二次元')) return Icons.auto_stories;
+    if (n.contains('奇幻') || n.contains('魔法')) return Icons.auto_awesome;
+    if (n.contains('穿越') || n.contains('重生')) return Icons.swap_horiz;
+    if (n.contains('系统') || n.contains('签到')) return Icons.settings_suggest;
+    if (n.contains('种田') || n.contains('经营')) return Icons.agriculture;
+    if (n.contains('无限流') || n.contains('诸天')) return Icons.all_inclusive;
+    if (n.contains('盗墓') || n.contains('探险')) return Icons.explore;
+    if (n.contains('虐文') || n.contains('虐恋')) return Icons.sentiment_dissatisfied;
+    if (n.contains('甜宠') || n.contains('甜文')) return Icons.favorite_border;
+    if (n.contains('爽文') || n.contains('无敌')) return Icons.bolt;
+    if (n.contains('推理') || n.contains('侦探')) return Icons.search;
+    return level == 0 ? Icons.group : (level == 3 ? Icons.label_outline : Icons.menu_book);
   }
 }

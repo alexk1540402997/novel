@@ -122,5 +122,5 @@ class NovelCharacter {
       relationships.map((r) => r.targetName).toSet();
 }
 
-const characterRoles = ['主角', '重要配角', '配角', '反派', '路人'];
+const characterRoles = ['主角', '女主', '红颜', '重要配角', '导师/前辈', '主要反派', '次要反派', '路人', '其他'];
 const relationTypes = ['师徒', '恋人', '敌对', '朋友', '亲人', '同门', '同盟', '上下级', '其他'];

@@ -13,7 +13,7 @@ class CharacterPage extends StatefulWidget {
 class _CharacterPageState extends State<CharacterPage> {
   List<NovelCharacter> _allChars = [];
   List<NovelCharacter> _filtered = [];
-  String _roleFilter = '全部';
+  String? _roleFilter; // null = 显示"分类"提示, 筛选全部
   String _search = '';
   bool _loading = false;
   String? _novel;
@@ -47,7 +47,7 @@ class _CharacterPageState extends State<CharacterPage> {
 
   void _apply() {
     var l = _allChars;
-    if (_roleFilter != '全部') l = l.where((c) => c.role == _roleFilter).toList();
+    if (_roleFilter != null && _roleFilter != '全部') l = l.where((c) => c.role == _roleFilter).toList();
     if (_search.isNotEmpty) {
       final q = _search.toLowerCase();
       l = l.where((c) =>
@@ -95,12 +95,20 @@ class _CharacterPageState extends State<CharacterPage> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) {
           return AlertDialog(
-            title: Text(isNew ? '新增角色' : '编辑角色'),
+            title: null, // 不使用默认标题，避免背景遮挡内容
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // 自定义标题
+                  Row(children: [
+                    Icon(Icons.person, color: Colors.teal, size: 22),
+                    const SizedBox(width: 8),
+                    Text(isNew ? '新增角色' : '编辑角色',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  ]),
+                  const SizedBox(height: 16),
                   TextField(
                     decoration: const InputDecoration(
                         labelText: '姓名*', border: OutlineInputBorder(), isDense: true),
@@ -132,14 +140,32 @@ class _CharacterPageState extends State<CharacterPage> {
                   ]),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<String>(
-                    value: role,
+                    value: characterRoles.contains(role) ? role : '其他',
                     decoration: const InputDecoration(
                         labelText: '角色定位', border: OutlineInputBorder(), isDense: true),
                     items: characterRoles
                         .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                         .toList(),
-                    onChanged: (v) => setD(() => role = v ?? '配角'),
+                    onChanged: (v) {
+                      if (v == '其他') {
+                        setD(() => role = '');
+                      } else {
+                        setD(() => role = v ?? '配角');
+                      }
+                    },
                   ),
+                  // 当选择"其他"或role不在预设列表中时，显示手动输入框
+                  if (!characterRoles.contains(role) && role != '其他')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: TextField(
+                        decoration: const InputDecoration(
+                            labelText: '自定义角色定位', border: OutlineInputBorder(), isDense: true,
+                            hintText: '输入自定义角色定位，如"女主/红颜"'),
+                        controller: TextEditingController(text: role),
+                        onChanged: (v) => role = v,
+                      ),
+                    ),
                   const SizedBox(height: 10),
                   TextField(
                     decoration: const InputDecoration(
@@ -300,6 +326,7 @@ class _CharacterPageState extends State<CharacterPage> {
           Expanded(
             child: DropdownButtonFormField<String>(
               value: _roleFilter,
+              hint: const Text('分类', style: TextStyle(fontSize: 13, color: Colors.grey)),
               decoration: InputDecoration(
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   isDense: true,
@@ -307,7 +334,7 @@ class _CharacterPageState extends State<CharacterPage> {
               items: ['全部', ...characterRoles]
                   .map((r) => DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontSize: 13))))
                   .toList(),
-              onChanged: (v) { setState(() { _roleFilter = v ?? '全部'; _apply(); }); },
+              onChanged: (v) { setState(() { _roleFilter = v; _apply(); }); },
             ),
           ),
           const SizedBox(width: 12),
@@ -384,7 +411,7 @@ class _CharacterPageState extends State<CharacterPage> {
                     child: Row(children: [
                       Icon(Icons.flag, size: 13, color: Colors.grey[500]),
                       const SizedBox(width: 4),
-                      Text(c.faction, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                      Expanded(child: Text(c.faction, style: TextStyle(fontSize: 12, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis)),
                     ])),
               const Spacer(),
               if (c.personality.isNotEmpty)

@@ -12,7 +12,8 @@ class ForeshadowingPage extends StatefulWidget {
 
 class _ForeshadowingPageState extends State<ForeshadowingPage> {
   List<Foreshadowing> _all = [], _filtered = [];
-  String _statusFilter = '全部', _search = '';
+  String? _statusFilter; // null = 显示"伏笔状态"提示, 筛选全部
+  String _search = '';
   bool _loading = false;
   String? _novel;
   final _svc = ForeshadowingService();
@@ -38,7 +39,7 @@ class _ForeshadowingPageState extends State<ForeshadowingPage> {
 
   void _apply() {
     var l = _all;
-    if (_statusFilter != '全部') l = l.where((f) => f.status == _statusFilter).toList();
+    if (_statusFilter != null && _statusFilter != '全部') l = l.where((f) => f.status == _statusFilter).toList();
     if (_search.isNotEmpty) {
       final q = _search.toLowerCase();
       l = l.where((f) => f.name.toLowerCase().contains(q) || f.description.toLowerCase().contains(q)).toList();
@@ -134,7 +135,7 @@ class _ForeshadowingPageState extends State<ForeshadowingPage> {
       Padding(padding:const EdgeInsets.fromLTRB(16,16,16,0), child:Row(children:[
         Expanded(flex:2,child:TextField(controller:_searchCtrl, decoration:InputDecoration(hintText:'搜索伏笔...',prefixIcon:const Icon(Icons.search),border:OutlineInputBorder(borderRadius:BorderRadius.circular(8)),isDense:true,contentPadding:const EdgeInsets.symmetric(horizontal:12,vertical:10)), onChanged:(v){_search=v;_apply();})),
         const SizedBox(width:12),
-        Expanded(child:DropdownButtonFormField<String>(value:_statusFilter, decoration:InputDecoration(border:OutlineInputBorder(borderRadius:BorderRadius.circular(8)),isDense:true,contentPadding:const EdgeInsets.symmetric(horizontal:12,vertical:10)), items:['全部',...foreshadowingStatuses].map((s)=>DropdownMenuItem(value:s,child:Text(s,style:const TextStyle(fontSize:13)))).toList(), onChanged:(v){setState((){_statusFilter=v??'全部';_apply();});})),
+        Expanded(child:DropdownButtonFormField<String>(value:_statusFilter, hint:const Text('伏笔状态', style:TextStyle(fontSize:13, color:Colors.grey)), decoration:InputDecoration(border:OutlineInputBorder(borderRadius:BorderRadius.circular(8)),isDense:true,contentPadding:const EdgeInsets.symmetric(horizontal:12,vertical:10)), items:['全部',...foreshadowingStatuses].map((s)=>DropdownMenuItem(value:s,child:Text(s,style:const TextStyle(fontSize:13)))).toList(), onChanged:(v){setState((){_statusFilter=v;_apply();});})),
         const SizedBox(width:12),
         FilledButton.icon(onPressed:()=>_edit(), icon:const Icon(Icons.add,size:18), label:const Text('添加')),
       ])),

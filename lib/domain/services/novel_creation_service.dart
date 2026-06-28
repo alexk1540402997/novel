@@ -138,14 +138,21 @@ class NovelCreationService {
   }
 
   NovelCharacter _makeChar(int idx, String role, Map<String, String> traits) {
+    // 尝试从多种可能的字段名中提取姓名
+    String name = traits['姓名'] ?? traits['名字'] ?? traits['名称'] ?? '';
+    if (name.isEmpty) {
+      // 如果模板没有提供姓名，用角色定位作为占位名
+      final roleName = role.length > 6 ? role.substring(0, 6) : role;
+      name = '$roleName（待命名）';
+    }
     return NovelCharacter(
       id: 'tpl_$idx',
-      name: traits['姓名'] ?? '$role（待命名）',
+      name: name,
       role: role.contains('主角') ? '主角' : (role.contains('反派') ? '反派' : '配角'),
       gender: traits['性别'] ?? '男',
       personality: traits['性格']?.split('/') ?? [],
-      faction: traits['定位'] ?? '',
-      abilities: traits['能力']?.split('/') ?? [],
+      faction: traits['定位'] ?? traits['势力'] ?? '',
+      abilities: traits['能力']?.split('/') ?? traits['技能']?.split('/') ?? [],
       notes: '来自创作模板，请在角色库中完善',
     );
   }

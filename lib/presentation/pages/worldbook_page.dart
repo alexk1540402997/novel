@@ -14,8 +14,9 @@ class WorldbookPage extends StatefulWidget {
 class _WorldbookPageState extends State<WorldbookPage> {
   List<WorldSetting> _allItems = [];
   List<WorldSetting> _filteredItems = [];
-  String _selectedCategory = '全部';
-  String _selectedStatus = '全部';
+  String? _selectedCategory; // null = 显示"分类"提示, 筛选全部
+  String? _selectedStatus;   // null = 显示"是否揭示"提示, 筛选全部
+  final Set<String> _pinnedIds = {}; // 置顶条目ID集合
   String _searchQuery = '';
   bool _isLoading = false;
   String? _novelFolder;
@@ -50,12 +51,17 @@ class _WorldbookPageState extends State<WorldbookPage> {
 
   void _applyFilters() {
     var items = _allItems;
-    if (_selectedCategory != '全部') {
+    if (_selectedCategory != null && _selectedCategory != '全部') {
       items = items.where((e) => e.category == _selectedCategory).toList();
     }
-    if (_selectedStatus != '全部') {
+    if (_selectedStatus != null && _selectedStatus != '全部') {
       items = items.where((e) => e.status == _selectedStatus).toList();
     }
+    // 置顶排序
+    items = [
+      ...items.where((e) => _pinnedIds.contains(e.id)),
+      ...items.where((e) => !_pinnedIds.contains(e.id)),
+    ];
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       items = items
@@ -282,6 +288,7 @@ class _WorldbookPageState extends State<WorldbookPage> {
             flex: 2,
             child: DropdownButtonFormField<String>(
               value: _selectedCategory,
+              hint: const Text('分类', style: TextStyle(fontSize: 13, color: Colors.grey)),
               decoration: InputDecoration(
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 isDense: true,
@@ -292,7 +299,7 @@ class _WorldbookPageState extends State<WorldbookPage> {
                   .toList(),
               onChanged: (v) {
                 setState(() {
-                  _selectedCategory = v ?? '全部';
+                  _selectedCategory = v;
                   _applyFilters();
                 });
               },
@@ -304,6 +311,7 @@ class _WorldbookPageState extends State<WorldbookPage> {
             flex: 2,
             child: DropdownButtonFormField<String>(
               value: _selectedStatus,
+              hint: const Text('是否揭示', style: TextStyle(fontSize: 13, color: Colors.grey)),
               decoration: InputDecoration(
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 isDense: true,
@@ -314,7 +322,7 @@ class _WorldbookPageState extends State<WorldbookPage> {
                   .toList(),
               onChanged: (v) {
                 setState(() {
-                  _selectedStatus = v ?? '全部';
+                  _selectedStatus = v;
                   _applyFilters();
                 });
               },
@@ -367,13 +375,17 @@ class _WorldbookPageState extends State<WorldbookPage> {
   }
 
   Widget _buildItemCard(WorldSetting item) {
+    final isPinned = _pinnedIds.contains(item.id);
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: _statusColor(item.status).withAlpha(60)),
+        side: BorderSide(color: (isPinned ? Colors.amber : _statusColor(item.status)).withAlpha(isPinned ? 200 : 60)),
       ),
-      child: Padding(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => _showEditDialog(existing: item),
+        child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,6 +393,8 @@ class _WorldbookPageState extends State<WorldbookPage> {
             // 标题行
             Row(
               children: [
+                if (isPinned)
+                  const Icon(Icons.push_pin, size: 16, color: Colors.amber),
                 Icon(_categoryIcon(item.category), size: 20, color: Colors.teal),
                 const SizedBox(width: 8),
                 Expanded(
@@ -399,10 +413,24 @@ class _WorldbookPageState extends State<WorldbookPage> {
                   iconSize: 18,
                   onSelected: (action) {
                     if (action == 'edit') _showEditDialog(existing: item);
+                    if (action == 'pin') {
+                      setState(() {
+                        if (_pinnedIds.contains(item.id)) {
+                          _pinnedIds.remove(item.id);
+                        } else {
+                          _pinnedIds.add(item.id);
+                        }
+                        _applyFilters();
+                      });
+                    }
                     if (action == 'delete') _deleteItem(item);
                   },
                   itemBuilder: (ctx) => [
                     const PopupMenuItem(value: 'edit', child: Text('编辑')),
+                    PopupMenuItem(
+                      value: 'pin',
+                      child: Text(_pinnedIds.contains(item.id) ? '取消置顶' : '置顶'),
+                    ),
                     const PopupMenuItem(value: 'delete', child: Text('删除', style: TextStyle(color: Colors.red))),
                   ],
                 ),
@@ -444,6 +472,7 @@ class _WorldbookPageState extends State<WorldbookPage> {
               ),
           ],
         ),
+      ),
       ),
     );
   }
