@@ -14,6 +14,7 @@ class LargeModelSettingsPage extends StatefulWidget {
 class _LargeModelSettingsPageState extends State<LargeModelSettingsPage> {
   Map<String, dynamic> _llmConfigs = {};
   Map<String, dynamic> _embeddingConfigs = {};
+  Map<String, dynamic> _chooseConfigs = {};
 
   @override
   void initState() {
@@ -31,6 +32,7 @@ class _LargeModelSettingsPageState extends State<LargeModelSettingsPage> {
         _embeddingConfigs = Map<String, dynamic>.from(
           config['embedding_configs'] ?? {},
         );
+        _chooseConfigs = Map<String, dynamic>.from(config['choose_configs'] ?? {});
       });
     }
   }
@@ -501,6 +503,43 @@ class _LargeModelSettingsPageState extends State<LargeModelSettingsPage> {
   }
 
   @override
+  /// 构建模型选择下拉框
+  Widget _buildModelSelector({required String label, required IconData icon, required String configKey}) {
+    final currentValue = _chooseConfigs[configKey] as String?;
+    final configNames = _llmConfigs.keys.toList();
+    if (configKey == 'image_llm') {
+      // 图片模型也从llm_configs里选（也可以用专门的image configs）
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(children: [
+        Icon(icon, size: 18, color: Colors.teal),
+        const SizedBox(width: 8),
+        Expanded(child: Text(label, style: const TextStyle(fontSize: 13))),
+        const SizedBox(width: 8),
+        if (configNames.isEmpty)
+          Text('暂无可用模型', style: TextStyle(fontSize: 12, color: Colors.grey[500]))
+        else
+          DropdownButton<String>(
+            value: configNames.contains(currentValue) ? currentValue : null,
+            hint: Text('请选择', style: TextStyle(fontSize: 12, color: Colors.red[400])),
+            underline: const SizedBox(),
+            style: const TextStyle(fontSize: 13, color: Colors.teal),
+            items: configNames.map((name) => DropdownMenuItem(
+              value: name,
+              child: Text(name, style: const TextStyle(fontSize: 13)),
+            )).toList(),
+            onChanged: (v) async {
+              if (v == null) return;
+              setState(() => _chooseConfigs[configKey] = v);
+              await ConfigService().set('choose_configs.$configKey', v);
+            },
+          ),
+      ]),
+    );
+  }
+
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
@@ -510,6 +549,37 @@ class _LargeModelSettingsPageState extends State<LargeModelSettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ===== 模型选择：指定当前使用的模型 =====
+            Card(
+              color: Colors.teal[50],
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Row(children: [
+                    Icon(Icons.touch_app, size: 20, color: Colors.teal),
+                    SizedBox(width: 8),
+                    Text('选择使用的模型', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  ]),
+                  const SizedBox(height: 4),
+                  Text('下方配置好模型后，在这里选择要使用哪个', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  const SizedBox(height: 12),
+                  // 文字模型选择
+                  _buildModelSelector(
+                    label: '文字模型（续写/润色/摘要/灵感）',
+                    icon: Icons.text_fields,
+                    configKey: 'final_chapter_llm',
+                  ),
+                  const Divider(),
+                  // 图片模型选择
+                  _buildModelSelector(
+                    label: '图片模型（场景图生成）',
+                    icon: Icons.image,
+                    configKey: 'image_llm',
+                  ),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 16),
             // LLM配置部分
             Card(
               child: Padding(

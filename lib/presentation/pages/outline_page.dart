@@ -298,7 +298,10 @@ class _OutlinePageState extends State<OutlinePage> {
     ),
     Expanded(
       child: _root != null && _root!.children.isNotEmpty
-        ? ListView(padding: const EdgeInsets.symmetric(vertical: 4), children: _buildTree('0', _root!, 0))
+        ? ListView(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            children: _buildTreeList('0', _root!, 0),
+          )
         : Center(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.auto_stories, size: 36, color: Colors.grey[300]),
@@ -324,7 +327,7 @@ class _OutlinePageState extends State<OutlinePage> {
     ]),
   );
 
-  List<Widget> _buildTree(String path, OutlineNode node, int depth) {
+  List<Widget> _buildTreeList(String path, OutlineNode node, int depth) {
     final w = <Widget>[];
     final sel = _selectedPath == path;
     final level = _levelOf(path);
@@ -332,29 +335,18 @@ class _OutlinePageState extends State<OutlinePage> {
     final hasChildren = node.children.isNotEmpty;
     final isCollapsed = _collapsedPaths.contains(path);
 
-    w.add(InkWell(
+    // 用 ListTile 确保点击可靠
+    w.add(ListTile(
       onTap: () => _selectNode(path),
-      child: Container(
-        decoration: BoxDecoration(
-          color: sel ? _levelColor(level).withAlpha(20) : null,
-          border: sel ? Border(left: BorderSide(color: _levelColor(level), width: 3)) : null,
-        ),
-        padding: EdgeInsets.only(left: 8.0 + depth * 20, right: 8, top: 6, bottom: 6),
-        child: Row(children: [
-          // 层级指示圆点
-          if (!isRoot)
-            Container(
-              width: 6, height: 6,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: _levelColor(level),
-                shape: BoxShape.circle,
-              ),
-            ),
-          if (isRoot) const SizedBox(width: 6),
-          // 展开/折叠按钮（仅对有子节点的节点显示）
-          if (hasChildren)
-            GestureDetector(
+      selected: sel,
+      selectedTileColor: _levelColor(level).withAlpha(20),
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      contentPadding: EdgeInsets.only(left: 8.0 + depth * 20, right: 8),
+      minLeadingWidth: 0,
+      // 折叠箭头或占位
+      leading: hasChildren
+          ? GestureDetector(
               onTap: () => _toggleCollapse(path),
               child: Icon(
                 isCollapsed ? Icons.keyboard_arrow_right : Icons.keyboard_arrow_down,
@@ -362,42 +354,48 @@ class _OutlinePageState extends State<OutlinePage> {
                 color: sel ? _levelColor(level) : Colors.grey[400],
               ),
             )
-          else
-            const SizedBox(width: 16),
-          const SizedBox(width: 4),
-          // 层级标签
-          if (!isRoot)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              margin: const EdgeInsets.only(right: 6),
-              decoration: BoxDecoration(
-                color: _levelColor(level).withAlpha(25),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Text(_levelLabel(level), style: TextStyle(fontSize: 9, color: _levelColor(level), fontWeight: FontWeight.w500)),
-            ),
-          // 标题
-          Expanded(
-            child: Text(
-              node.title,
-              style: TextStyle(
-                fontSize: isRoot ? 14 : 13,
-                fontWeight: isRoot ? FontWeight.bold : (sel ? FontWeight.w600 : FontWeight.normal),
-                color: sel ? _levelColor(level) : null,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          : const SizedBox(width: 16),
+      // 标题
+      title: Row(children: [
+        if (!isRoot)
+          Container(
+            width: 6, height: 6,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: _levelColor(level),
+              shape: BoxShape.circle,
             ),
           ),
-          // 操作按钮（选中时显示）
-          if (sel)
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              // 添加子节点 → 文字按钮 "＋子"
+        if (!isRoot)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            margin: const EdgeInsets.only(right: 6),
+            decoration: BoxDecoration(
+              color: _levelColor(level).withAlpha(25),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Text(_levelLabel(level), style: TextStyle(fontSize: 9, color: _levelColor(level), fontWeight: FontWeight.w500)),
+          ),
+        Flexible(
+          child: Text(
+            node.title,
+            style: TextStyle(
+              fontSize: isRoot ? 14 : 13,
+              fontWeight: isRoot ? FontWeight.bold : (sel ? FontWeight.w600 : FontWeight.normal),
+              color: sel ? _levelColor(level) : null,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ]),
+      // 选中时显示操作按钮
+      trailing: sel
+          ? Row(mainAxisSize: MainAxisSize.min, children: [
               GestureDetector(
                 onTap: () => _addChild(path),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  margin: const EdgeInsets.only(left: 4),
                   decoration: BoxDecoration(
                     color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(3),
@@ -405,13 +403,12 @@ class _OutlinePageState extends State<OutlinePage> {
                   child: Text('＋子', style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500)),
                 ),
               ),
-              // 添加同级节点
-              if (path != '0')
+              if (path != '0') ...[
+                const SizedBox(width: 2),
                 GestureDetector(
                   onTap: () => _addSibling(path),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    margin: const EdgeInsets.only(left: 2),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(3),
@@ -419,15 +416,15 @@ class _OutlinePageState extends State<OutlinePage> {
                     child: Text('＋同', style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500)),
                   ),
                 ),
-            ]),
-        ]),
-      ),
+              ],
+            ])
+          : null,
     ));
 
-    // 递归渲染子节点（折叠的节点不渲染子节点）
+    // 递归渲染子节点
     if (!isCollapsed) {
       for (var i = 0; i < node.children.length; i++) {
-        w.addAll(_buildTree('$path/$i', node.children[i], depth + 1));
+        w.addAll(_buildTreeList('$path/$i', node.children[i], depth + 1));
       }
     }
     return w;

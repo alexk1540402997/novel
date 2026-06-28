@@ -382,22 +382,13 @@ class _HomePageState extends State<HomePage> {
                 .toList(),
           ),
           const VerticalDivider(width: 1),
-          // 主内容区
+          // 主内容区（占满剩余宽度）
           Expanded(
-            flex: 3,
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: _navItems[_selectedIndex].page,
             ),
           ),
-          // 右侧AI助手面板（设置页面不显示）
-          if (!_isSettingsPage)
-            const VerticalDivider(width: 1),
-          if (!_isSettingsPage)
-            Expanded(
-              flex: 2,
-              child: _buildAIAssistantPanel(localizations),
-            ),
         ],
       ),
     );
