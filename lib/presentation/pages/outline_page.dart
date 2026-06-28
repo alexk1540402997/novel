@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
 import '../../domain/services/novel_folder_service.dart';
+import '../../domain/usecases/llm_usecase.dart';
+import '../../utils/config_service.dart';
 import '../pages/novel_architecture_page.dart';
 
 class OutlineNode {
@@ -461,13 +463,14 @@ class _OutlinePageState extends State<OutlinePage> {
             }),
             const SizedBox(width: 12),
             _quickBtn('添加章节', Icons.article, () {
-              // 在分卷大纲的第一个卷下面添加章节
               if (_root != null && _root!.children.length > 1 && _root!.children[1].children.isNotEmpty) {
                 _addChild('0/1/0');
               } else {
                 _addChild('0');
               }
             }),
+            const SizedBox(width: 12),
+            _quickBtn('灵感建议', Icons.lightbulb, _showOutlineInspiration),
           ]),
         ]),
       );
@@ -584,6 +587,42 @@ class _OutlinePageState extends State<OutlinePage> {
       }
     }
     return crumbs.join(' > ');
+  }
+
+  /// 灵感建议：根据大纲上下文调用LLM获取创作灵感
+  Future<void> _showOutlineInspiration() async {
+    final buf = StringBuffer();
+    void collect(OutlineNode n, int depth) {
+      buf.writeln('${"  " * depth}${n.title}: ${n.content}');
+      for (final c in n.children) collect(c, depth + 1);
+    }
+    if (_root != null) collect(_root!, 0);
+    final ctx = buf.toString();
+    if (ctx.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('大纲为空')));
+      return;
+    }
+    try {
+      final config = ConfigService().getAll();
+      final llmName = config?['choose_configs']?['final_chapter_llm'] ?? 'Claude Sonnet 4.6';
+      final prompt = '作为资深网文编辑，根据大纲提供3-5条创作灵感（剧情走向、人物发展、世界观拓展），每条用"---"分隔：\n\n$ctx';
+      final result = await LLMUseCase().generateText(prompt, llmName);
+      final ideas = result.split('---').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      if (!mounted) return;
+      showDialog(context: context, builder: (ctx) => AlertDialog(
+        title: const Row(children: [Icon(Icons.lightbulb, color: Colors.orange), SizedBox(width: 8), Text('灵感建议')]),
+        content: SizedBox(width: 500, child: ListView.builder(
+          shrinkWrap: true, itemCount: ideas.length,
+          itemBuilder: (_, i) => Card(child: Padding(padding: const EdgeInsets.all(12), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(width: 24, height: 24, alignment: Alignment.center, decoration: BoxDecoration(color: Colors.orange[100], shape: BoxShape.circle), child: Text('${i+1}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange[800]))),
+            const SizedBox(width: 12), Expanded(child: Text(ideas[i], style: const TextStyle(fontSize: 13, height: 1.5))),
+          ]))),
+        )),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))],
+      ));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('失败: $e')));
+    }
   }
 
   Widget _quickBtn(String label, IconData icon, VoidCallback onTap) {

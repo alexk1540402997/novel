@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/datasources/local/novel_file_service.dart';
+import '../../domain/services/novel_folder_service.dart';
 import '../../domain/services/context_memory_service.dart';
 import '../../domain/services/image_generation_service.dart';
 import '../../domain/usecases/llm_usecase.dart';
@@ -28,8 +30,11 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
   bool _correcting = false;
   bool _polishing = false;
   String? _generatedText;
-  double _editorFontSize = 15; // 编辑器字体大小，可从设置调节
-  bool _chatExpanded = false; // 底部AI聊天区展开/收起
+  double _editorFontSize = 15;
+  bool _chatExpanded = false;
+  // 大纲分卷结构
+  List<_VolumeGroup> _volumeGroups = [];
+  Set<int> _collapsedVolumes = {};
 
   @override
   void initState() {
@@ -56,11 +61,46 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
     if (_novel == null) return;
     setState(() => _loading = true);
     final nums = await _fileSvc.getChapterNumbers(_novel!);
+    await _loadOutlineStructure();
     setState(() { _chapterNums = nums; _loading = false; });
-    // 自动选择第一个章节（如果没有当前选中的章节）
     if (_currentChapter == null && nums.isNotEmpty) {
       _selectChapter(nums.first);
     }
+  }
+
+  /// 从大纲读取分卷结构，建立卷→章节映射
+  Future<void> _loadOutlineStructure() async {
+    _volumeGroups = [];
+    try {
+      final base = await NovelFolderService().getNovelsFolderPath();
+      final f = File('$base/$_novel/outline.json');
+      if (!await f.exists()) return;
+      final root = jsonDecode(await f.readAsString());
+      // 分卷大纲是 children[1]
+      final volumesNode = (root['children'] as List?)?.length == 2 ? root['children'][1] : null;
+      if (volumesNode == null) return;
+      final volumes = volumesNode['children'] as List? ?? [];
+      for (var vi = 0; vi < volumes.length; vi++) {
+        final v = volumes[vi];
+        final chapters = <int>[];
+        final chNodes = v['children'] as List? ?? [];
+        for (var ci = 0; ci < chNodes.length; ci++) {
+          // 第N章 → 章节号N
+          final title = chNodes[ci]['title'] as String? ?? '';
+          final match = RegExp(r'(\d+)').firstMatch(title);
+          if (match != null) {
+            chapters.add(int.parse(match.group(1)!));
+          } else {
+            // fallback: 按顺序编号
+            chapters.add(ci + 1);
+          }
+        }
+        _volumeGroups.add(_VolumeGroup(
+          title: v['title'] as String? ?? '卷${vi + 1}',
+          chapterNumbers: chapters,
+        ));
+      }
+    } catch (_) {}
   }
 
   Future<void> _selectChapter(int num) async {
@@ -448,19 +488,24 @@ $outline
                 ),
               ),
             Expanded(
-              child: ListView.builder(
-                itemCount: _chapterNums.length,
-                itemBuilder: (ctx, i) {
-                  final num = _chapterNums[i];
-                  final isSelected = _currentChapter == num;
-                  return ListTile(
-                    selected: isSelected,
-                    dense: true,
-                    title: Text('第$num章', style: TextStyle(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                    onTap: () => _selectChapter(num),
-                  );
-                },
-              ),
+              child: _volumeGroups.isEmpty
+                ? ListView.builder(
+                    itemCount: _chapterNums.length,
+                    itemBuilder: (ctx, i) {
+                      final num = _chapterNums[i];
+                      final isSelected = _currentChapter == num;
+                      return ListTile(
+                        selected: isSelected,
+                        dense: true,
+                        title: Text('第$num章', style: TextStyle(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                        onTap: () => _selectChapter(num),
+                      );
+                    },
+                  )
+                : ListView.builder(
+                    itemCount: _buildChapterListItems().length,
+                    itemBuilder: (ctx, i) => _buildChapterListItems()[i],
+                  ),
             ),
             // 底部章节统计
             if (_chapterNums.isNotEmpty)
@@ -812,6 +857,74 @@ $outline
     );
   }
 
+  /// 构建分卷分组+章节列表项
+  List<Widget> _buildChapterListItems() {
+    final items = <Widget>[];
+    final assignedChapters = <int>{};
+    for (var vi = 0; vi < _volumeGroups.length; vi++) {
+      final vol = _volumeGroups[vi];
+      final isCollapsed = _collapsedVolumes.contains(vi);
+      assignedChapters.addAll(vol.chapterNumbers);
+      // 卷标题
+      items.add(InkWell(
+        onTap: () {
+          setState(() {
+            if (isCollapsed) { _collapsedVolumes.remove(vi); }
+            else { _collapsedVolumes.add(vi); }
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          color: Colors.grey[100],
+          child: Row(children: [
+            Icon(isCollapsed ? Icons.keyboard_arrow_right : Icons.keyboard_arrow_down, size: 16, color: Colors.indigo),
+            const SizedBox(width: 4),
+            Expanded(child: Text(vol.title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.indigo))),
+            Text('${vol.chapterNumbers.length}章', style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+          ]),
+        ),
+      ));
+      // 章节列表（折叠则跳过）
+      if (!isCollapsed) {
+        for (final num in vol.chapterNumbers) {
+          if (!_chapterNums.contains(num)) continue;
+          final isSelected = _currentChapter == num;
+          items.add(ListTile(
+            selected: isSelected,
+            dense: true,
+            contentPadding: const EdgeInsets.only(left: 28, right: 8),
+            title: Text('第$num章', style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            onTap: () => _selectChapter(num),
+          ));
+        }
+      }
+    }
+    // 未归属任何卷的章节
+    final unassigned = _chapterNums.where((n) => !assignedChapters.contains(n)).toList();
+    if (unassigned.isNotEmpty) {
+      items.add(Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        color: Colors.grey[100],
+        child: const Row(children: [
+          Icon(Icons.article, size: 14, color: Colors.grey),
+          SizedBox(width: 4),
+          Text('未归类章节', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey)),
+        ]),
+      ));
+      for (final num in unassigned) {
+        final isSelected = _currentChapter == num;
+        items.add(ListTile(
+          selected: isSelected,
+          dense: true,
+          contentPadding: const EdgeInsets.only(left: 28, right: 8),
+          title: Text('第$num章', style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+          onTap: () => _selectChapter(num),
+        ));
+      }
+    }
+    return items;
+  }
+
   /// 迷你按钮（用于底部AI栏）
   Widget _miniBtn(String label, VoidCallback? onPressed, {IconData? icon, Color? color}) {
     final c = color ?? Colors.teal;
@@ -962,4 +1075,11 @@ $outline
       }
     }
   }
+}
+
+/// 大纲分卷信息
+class _VolumeGroup {
+  final String title;
+  final List<int> chapterNumbers;
+  const _VolumeGroup({required this.title, required this.chapterNumbers});
 }
