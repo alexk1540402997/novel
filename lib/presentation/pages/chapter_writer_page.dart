@@ -1461,7 +1461,7 @@ $outline
     );
   }
 
-  /// 根据选中文本生成场景插图
+  /// 根据选中文本生成场景插图（含预览/刷新/确认流程）
   Future<void> _generateSceneImage() async {
     final selection = _textCtrl.selection;
     final selectedText = selection.isValid && !selection.isCollapsed
@@ -1476,6 +1476,12 @@ $outline
       return;
     }
 
+    // 循环生成直到用户满意或取消
+    await _doGenerateAndPreview(selectedText);
+  }
+
+  Future<void> _doGenerateAndPreview(String sceneText) async {
+    // 加载中弹窗
     showDialog(context: context, barrierDismissible: false,
       builder: (_) => const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
         CircularProgressIndicator(),
@@ -1487,14 +1493,78 @@ $outline
     try {
       final svc = ImageGenerationService();
       final imgPath = await svc.generateSceneImage(
-        sceneText: selectedText,
+        sceneText: sceneText,
         novelName: _novel!,
         chapterNum: _currentChapter,
       );
-      if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context); // 关闭加载中
+
       if (imgPath != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('场景图已生成: $imgPath'), backgroundColor: Colors.green, duration: const Duration(seconds: 5)));
+        // 预览+确认弹窗
+        final imgFile = File(imgPath);
+        final hasImg = imgFile.existsSync();
+        final action = await showDialog<String>(
+          context: context,
+          builder: (ctx) {
+            Widget preview;
+            if (hasImg) {
+              preview = ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(imgFile, fit: BoxFit.contain, height: 300),
+              );
+            } else {
+              preview = Container(
+                height: 200,
+                color: Colors.grey[200],
+                child: const Center(child: Text('图片加载失败', style: TextStyle(color: Colors.grey))),
+              );
+            }
+            return AlertDialog(
+              title: Row(children: [
+                const Icon(Icons.image, color: Colors.pink),
+                const SizedBox(width: 8),
+                const Text('场景插图预览'),
+              ]),
+              content: Column(mainAxisSize: MainAxisSize.min, children: [
+                preview,
+                const SizedBox(height: 12),
+                Text('图片已保存到：$imgPath', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+              ]),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, 'close'), child: const Text('关闭')),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.pop(ctx, 'refresh'),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('重新生成'),
+                ),
+                FilledButton.icon(
+                  onPressed: () => Navigator.pop(ctx, 'insert'),
+                  icon: const Icon(Icons.add_photo_alternate, size: 16),
+                  label: const Text('插入正文'),
+                ),
+              ],
+            );
+          },
+        );
+
+        if (action == 'insert') {
+          // 在当前光标位置插入图片引用
+          final pos = _textCtrl.selection.isValid ? _textCtrl.selection.start : _textCtrl.text.length;
+          final imgName = imgPath.split('/').last.split('.').first;
+          final insertText = '\n\n[场景插图：$imgName]\n\n';
+          final newText = _textCtrl.text.substring(0, pos) + insertText + _textCtrl.text.substring(pos);
+          _textCtrl.text = newText;
+          _textCtrl.selection = TextSelection.collapsed(offset: pos + insertText.length);
+          setState(() {});
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('场景插图已插入正文'), backgroundColor: Colors.green));
+          }
+        } else if (action == 'refresh') {
+          // 重新生成
+          await _doGenerateAndPreview(sceneText);
+        }
+        // 'close' → 不操作
       }
     } catch (e) {
       if (mounted) Navigator.pop(context);
