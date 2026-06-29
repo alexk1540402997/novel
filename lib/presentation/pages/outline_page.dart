@@ -299,7 +299,7 @@ class _OutlinePageState extends State<OutlinePage> {
       trailing: sel
         ? Row(mainAxisSize: MainAxisSize.min, children: [
             GestureDetector(onTap: () => _addChild(p), child: Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(3)), child: Text('＋子', style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500)))),
-            if (p.isNotEmpty) ...[
+            if (p.isNotEmpty && p != '0' && p != '1') ...[
               const SizedBox(width: 2),
               GestureDetector(onTap: () => _addSibling(p), child: Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(3)), child: Text('＋同', style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500)))),
             ],
@@ -357,8 +357,10 @@ class _OutlinePageState extends State<OutlinePage> {
           const SizedBox(width: 12),
           Expanded(child: Text(_buildBreadcrumb(_selectedPath!), style: TextStyle(fontSize: 12, color: Colors.grey[500]), maxLines: 1, overflow: TextOverflow.ellipsis)),
           _toolBtn('＋子', Icons.subdirectory_arrow_right, () => _addChild(_selectedPath!)),
-          const SizedBox(width: 4),
-          _toolBtn('＋同', Icons.add, () => _addSibling(_selectedPath!)),
+          if (_selectedPath != '0' && _selectedPath != '1') ...[
+            const SizedBox(width: 4),
+            _toolBtn('＋同', Icons.add, () => _addSibling(_selectedPath!)),
+          ],
           const SizedBox(width: 4),
           _toolBtn('删除', Icons.delete_outline, () => _deleteNode(_selectedPath!), isRed: true),
         ]),

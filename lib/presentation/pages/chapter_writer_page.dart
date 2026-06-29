@@ -61,6 +61,7 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
     if (_novel == null) return;
     setState(() => _loading = true);
     final nums = await _fileSvc.getChapterNumbers(_novel!);
+    await _loadChapterMeta();
     await _loadOutlineStructure();
     setState(() { _chapterNums = nums; _loading = false; });
     if (_currentChapter == null && nums.isNotEmpty) {
@@ -120,10 +121,140 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
 
   Future<void> _addChapter() async {
     if (_novel == null) return;
+    // 弹窗输入章节名
+    final nameCtrl = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('新建章节'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            controller: nameCtrl,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: '输入章节名称', border: OutlineInputBorder()),
+          ),
+          const SizedBox(height: 8),
+          Text('直接点击确认则章节名显示"待定"', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, nameCtrl.text.trim().isEmpty ? '待定' : nameCtrl.text.trim()), child: const Text('确认')),
+        ],
+      ),
+    );
+    if (name == null) return;
     final next = _chapterNums.isEmpty ? 1 : (_chapterNums.last + 1);
     await _fileSvc.saveChapter(_novel!, next, '');
+    await _saveChapterMeta(next, name);
     await _loadChapters();
     _selectChapter(next);
+    // 同步到分卷大纲
+    _syncChapterToOutline(next, name);
+  }
+
+  /// 保存章节名到meta文件
+  Map<int, String> _chapterNames = {};
+  Future<void> _loadChapterMeta() async {
+    try {
+      final base = await NovelFolderService().getNovelsFolderPath();
+      final f = File('$base/$_novel/chapter_meta.json');
+      if (await f.exists()) {
+        final map = jsonDecode(await f.readAsString()) as Map<String, dynamic>;
+        _chapterNames = map.map((k, v) => MapEntry(int.parse(k), v as String));
+      }
+    } catch (_) { _chapterNames = {}; }
+  }
+  Future<void> _saveChapterMeta(int num, String name) async {
+    _chapterNames[num] = name;
+    try {
+      final base = await NovelFolderService().getNovelsFolderPath();
+      final f = File('$base/$_novel/chapter_meta.json');
+      await f.parent.create(recursive: true);
+      await f.writeAsString(jsonEncode(_chapterNames.map((k, v) => MapEntry(k.toString(), v))));
+    } catch (_) {}
+  }
+  /// 创建新分卷
+  Future<void> _addVolume() async {
+    final nameCtrl = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('创建新分卷'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            controller: nameCtrl,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: '输入分卷名称', border: OutlineInputBorder()),
+          ),
+          const SizedBox(height: 8),
+          Text('将在所有现有分卷之后创建', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, nameCtrl.text.trim().isEmpty ? '未命名分卷' : nameCtrl.text.trim()), child: const Text('确认')),
+        ],
+      ),
+    );
+    if (name == null) return;
+    // 同步到大纲
+    try {
+      final base = await NovelFolderService().getNovelsFolderPath();
+      final f = File('$base/$_novel/outline.json');
+      Map<String, dynamic> root;
+      if (await f.exists()) {
+        root = jsonDecode(await f.readAsString());
+      } else {
+        root = {'title': '大纲', 'content': '', 'children': [
+          {'title': '全书总纲', 'content': '', 'children': []},
+          {'title': '分卷大纲', 'content': '', 'children': []},
+        ]};
+      }
+      final volumes = root['children'][1];
+      final volList = volumes['children'] as List? ?? [];
+      final newVolIdx = volList.length + 1;
+      volList.add({'title': '卷$newVolIdx：$name', 'content': '', 'children': []});
+      await f.writeAsString(jsonEncode(root));
+      // 同时创建第一个章节
+      final next = _chapterNums.isEmpty ? 1 : (_chapterNums.last + 1);
+      await _fileSvc.saveChapter(_novel!, next, '');
+      await _saveChapterMeta(next, '待定');
+      volList.last['children'] = [{'title': '第${next}章：待定', 'content': '', 'children': []}];
+      await f.writeAsString(jsonEncode(root));
+      await _loadChapters();
+      _selectChapter(next);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已创建$name，并新建第$next章'), backgroundColor: Colors.teal),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('创建分卷失败: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  /// 同步章节名到分卷大纲
+  Future<void> _syncChapterToOutline(int num, String name) async {
+    try {
+      final base = await NovelFolderService().getNovelsFolderPath();
+      final f = File('$base/$_novel/outline.json');
+      if (!await f.exists()) return;
+      final root = jsonDecode(await f.readAsString());
+      final volumes = (root['children'] as List?);
+      if (volumes == null || volumes.length < 2) return;
+      final volNode = volumes[1]; // 分卷大纲
+      final volChildren = volNode['children'] as List? ?? [];
+      // 在最后一卷添加章节
+      if (volChildren.isNotEmpty) {
+        final lastVol = volChildren.last;
+        final chList = lastVol['children'] as List? ?? [];
+        chList.add({'title': '第${num}章：$name', 'content': '', 'children': []});
+        await f.writeAsString(jsonEncode(root));
+      }
+    } catch (_) {}
   }
 
   Future<void> _saveCurrent() async {
@@ -441,10 +572,19 @@ $outline
         child: _loading ? const Center(child: CircularProgressIndicator()) : Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
               child: FilledButton.icon(
                 onPressed: _addChapter, icon: const Icon(Icons.add, size: 16),
-                label: const Text('新章节'), style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 36)),
+                label: const Text('＋新章节'), style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 36)),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
+              child: OutlinedButton.icon(
+                onPressed: _addVolume,
+                icon: const Icon(Icons.create_new_folder, size: 16, color: Colors.teal),
+                label: const Text('＋新分卷', style: TextStyle(fontSize: 13, color: Colors.teal)),
+                style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 34)),
               ),
             ),
             // 章节跳转输入框
@@ -525,7 +665,15 @@ $outline
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(color: Colors.grey[50], border: const Border(bottom: BorderSide(color: Color(0xFFE0E0E0)))),
             child: Row(children: [
-              if (_currentChapter != null) Text('第$_currentChapter章', style: const TextStyle(fontWeight: FontWeight.bold)),
+              if (_currentChapter != null) ...[
+                Text('第$_currentChapter章', style: const TextStyle(fontWeight: FontWeight.bold)),
+                if (_chapterNames.containsKey(_currentChapter) && _chapterNames[_currentChapter]!.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  const Text('|', style: TextStyle(color: Colors.grey)),
+                  const SizedBox(width: 8),
+                  Text(_chapterNames[_currentChapter]!, style: const TextStyle(fontSize: 13, color: Colors.teal)),
+                ],
+              ],
               if (_currentChapter == null) Text('未选择章节', style: TextStyle(color: Colors.grey[500], fontSize: 13)),
               const Spacer(),
               _toolbarBtn(Icons.save, '保存', _currentChapter == null ? null : _saveCurrent),
