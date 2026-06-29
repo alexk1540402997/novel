@@ -143,13 +143,138 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
       ),
     );
     if (name == null) return;
-    final next = _chapterNums.isEmpty ? 1 : (_chapterNums.last + 1);
-    await _fileSvc.saveChapter(_novel!, next, '');
-    await _saveChapterMeta(next, name);
+
+    // 2.2/2.3: 确定插入位置——在所选章节之后，留在同一卷
+    int newNum;
+    int? targetVolumeIdx;
+
+    if (_currentChapter != null && _volumeGroups.isNotEmpty) {
+      // 找到当前章节所在的卷
+      for (var vi = 0; vi < _volumeGroups.length; vi++) {
+        if (_volumeGroups[vi].chapterNumbers.contains(_currentChapter)) {
+          targetVolumeIdx = vi;
+          break;
+        }
+      }
+      // 在当前章节之后插入（全局序号+1）
+      newNum = _currentChapter! + 1;
+    } else {
+      // 无选中章节时追加到最后一卷末尾
+      targetVolumeIdx = _volumeGroups.isNotEmpty ? _volumeGroups.length - 1 : null;
+      newNum = _chapterNums.isEmpty ? 1 : (_chapterNums.last + 1);
+    }
+
+    // 重编号后续章节（newNum及之后的所有章节全部+1）
+    if (_chapterNums.isNotEmpty) {
+      final affected = _chapterNums.where((n) => n >= newNum).toList();
+      if (affected.isNotEmpty) {
+        await _renumberChapters(affected, 1);
+      }
+    }
+
+    // 创建新章节文件 + meta
+    await _fileSvc.saveChapter(_novel!, newNum, '');
+    await _saveChapterMeta(newNum, name);
+
+    // 同步到大纲（插入到指定卷的新位置）
+    await _syncChapterToOutlineAt(newNum, name, targetVolumeIdx);
+
+    // 重载
     await _loadChapters();
-    _selectChapter(next);
-    // 同步到分卷大纲
-    _syncChapterToOutline(next, name);
+    _selectChapter(newNum);
+  }
+
+  /// 全局重编号章节：将affected列表中的章节号+delta
+  Future<void> _renumberChapters(List<int> affected, int delta) async {
+    // 从高到低处理，避免文件名冲突
+    affected.sort((a, b) => b.compareTo(a));
+    final base = await NovelFolderService().getNovelsFolderPath();
+    for (final oldNum in affected) {
+      final newNum = oldNum + delta;
+      // 重命名章节文件
+      final oldF = File('$base/$_novel/chapters/chapter_$oldNum.txt');
+      final newF = File('$base/$_novel/chapters/chapter_$newNum.txt');
+      if (await oldF.exists()) {
+        await newF.parent.create(recursive: true);
+        await oldF.rename(newF.path);
+      }
+      // 更新章节meta
+      if (_chapterNames.containsKey(oldNum)) {
+        _chapterNames[newNum] = _chapterNames[oldNum] ?? '';
+        _chapterNames.remove(oldNum);
+      }
+    }
+    // 保存更新后的meta
+    await _flushChapterMeta();
+
+    // 同步更新大纲中的章节编号
+    try {
+      final outlineF = File('$base/$_novel/outline.json');
+      if (await outlineF.exists()) {
+        final root = jsonDecode(await outlineF.readAsString());
+        final volumes = (root['children'] as List?);
+        if (volumes != null && volumes.length >= 2) {
+          final volNode = volumes[1];
+          final volChildren = volNode['children'] as List? ?? [];
+          for (final vol in volChildren) {
+            final chList = vol['children'] as List? ?? [];
+            for (final ch in chList) {
+              final title = ch['title'] as String? ?? '';
+              final match = RegExp(r'^第(\d+)章').firstMatch(title);
+              if (match != null) {
+                final oldChNum = int.parse(match.group(1)!);
+                if (affected.contains(oldChNum)) {
+                  final newChNum = oldChNum + delta;
+                  final rest = title.substring(match.end);
+                  ch['title'] = '第$newChNum章$rest';
+                }
+              }
+            }
+          }
+          await outlineF.writeAsString(jsonEncode(root));
+        }
+      }
+    } catch (_) {}
+  }
+
+  /// 将新章节同步到大纲，插入到指定卷中
+  Future<void> _syncChapterToOutlineAt(int num, String name, int? targetVolumeIdx) async {
+    try {
+      final base = await NovelFolderService().getNovelsFolderPath();
+      final f = File('$base/$_novel/outline.json');
+      if (!await f.exists()) return;
+      final root = jsonDecode(await f.readAsString());
+      final volumes = (root['children'] as List?);
+      if (volumes == null || volumes.length < 2) return;
+      final volNode = volumes[1]; // 分卷大纲
+      final volChildren = volNode['children'] as List? ?? [];
+      if (volChildren.isEmpty) return;
+
+      // 找到目标卷
+      final vi = (targetVolumeIdx != null && targetVolumeIdx < volChildren.length)
+          ? targetVolumeIdx
+          : volChildren.length - 1;
+      final targetVol = volChildren[vi];
+      final chList = targetVol['children'] as List? ?? [];
+
+      // 在正确的位置插入（按全局序号排序）
+      final newEntry = {'title': '第$num章：$name', 'content': '', 'children': []};
+      // 找到插入位置（保持升序）
+      int insertIdx = chList.length;
+      for (var i = 0; i < chList.length; i++) {
+        final t = chList[i]['title'] as String? ?? '';
+        final m = RegExp(r'(\d+)').firstMatch(t);
+        if (m != null) {
+          final existingNum = int.parse(m.group(1)!);
+          if (existingNum > num) {
+            insertIdx = i;
+            break;
+          }
+        }
+      }
+      chList.insert(insertIdx, newEntry);
+      await f.writeAsString(jsonEncode(root));
+    } catch (_) {}
   }
 
   /// 保存章节名到meta文件
@@ -166,6 +291,10 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
   }
   Future<void> _saveChapterMeta(int num, String name) async {
     _chapterNames[num] = name;
+    await _flushChapterMeta();
+  }
+
+  Future<void> _flushChapterMeta() async {
     try {
       final base = await NovelFolderService().getNovelsFolderPath();
       final f = File('$base/$_novel/chapter_meta.json');
@@ -637,7 +766,7 @@ $outline
                       return ListTile(
                         selected: isSelected,
                         dense: true,
-                        title: Text('第$num章', style: TextStyle(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                        title: Text(_chapterNames.containsKey(num) && _chapterNames[num]!.isNotEmpty ? '第$num章：${_chapterNames[num]}' : '第$num章', style: TextStyle(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
                         onTap: () => _selectChapter(num),
                       );
                     },
@@ -820,7 +949,7 @@ $outline
                             ),
                           ),
                           const SizedBox(width: 10),
-                          // 右侧操作区
+                          // 右侧操作区（2列×3行按钮网格，与大纲→正文右侧平齐）
                           SizedBox(
                             width: 155,
                             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -837,19 +966,24 @@ $outline
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              // 辅助按钮网格
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  child: Wrap(spacing: 4, runSpacing: 4, children: [
-                                    _actionChip('续写', Icons.auto_stories, Colors.blue, () => _generateFromOutline()),
-                                    _actionChip('润色', Icons.edit_note, Colors.teal, _polishSelectedText),
-                                    _actionChip('错字', Icons.spellcheck, Colors.purple, _checkTypos),
-                                    _actionChip('命名', Icons.drive_file_rename_outline, Colors.deepOrange, _autoNameChapter),
-                                    _actionChip('摘要', Icons.summarize, Colors.indigo, _autoSummary),
-                                    _actionChip('插图', Icons.image, Colors.pink, _generateSceneImage),
-                                  ]),
-                                ),
-                              ),
+                              // 辅助按钮：2列×3行网格
+                              Row(children: [
+                                Expanded(child: _actionGridBtn('续写', Icons.auto_stories, Colors.blue, () => _generateFromOutline())),
+                                const SizedBox(width: 4),
+                                Expanded(child: _actionGridBtn('润色', Icons.edit_note, Colors.teal, _polishSelectedText)),
+                              ]),
+                              const SizedBox(height: 4),
+                              Row(children: [
+                                Expanded(child: _actionGridBtn('错字', Icons.spellcheck, Colors.purple, _checkTypos)),
+                                const SizedBox(width: 4),
+                                Expanded(child: _actionGridBtn('命名', Icons.drive_file_rename_outline, Colors.deepOrange, _autoNameChapter)),
+                              ]),
+                              const SizedBox(height: 4),
+                              Row(children: [
+                                Expanded(child: _actionGridBtn('摘要', Icons.summarize, Colors.indigo, _autoSummary)),
+                                const SizedBox(width: 4),
+                                Expanded(child: _actionGridBtn('插图', Icons.image, Colors.pink, _generateSceneImage)),
+                              ]),
                               // 生成结果预览
                               if (_generatedText != null)
                                 Container(
@@ -1058,7 +1192,31 @@ $outline
     );
   }
 
-  /// 操作芯片（用于展开的AI面板）
+  /// 网格按钮（2列×3行，用于展开的AI面板）
+  Widget _actionGridBtn(String label, IconData icon, Color color, VoidCallback? onTap) {
+    return Material(
+      color: color.withAlpha(20),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withAlpha(60)),
+          ),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 4),
+            Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  /// 操作芯片（用于展开的AI面板，保留兼容）
   Widget _actionChip(String label, IconData icon, Color color, VoidCallback? onTap) {
     return Material(
       color: color.withAlpha(18),
@@ -1116,7 +1274,7 @@ $outline
             selected: isSelected,
             dense: true,
             contentPadding: const EdgeInsets.only(left: 28, right: 8),
-            title: Text('第$num章', style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            title: Text(_chapterNames.containsKey(num) && _chapterNames[num]!.isNotEmpty ? '第$num章：${_chapterNames[num]}' : '第$num章', style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
             onTap: () => _selectChapter(num),
           ));
         }

@@ -101,36 +101,96 @@ class _OutlinePageState extends State<OutlinePage> {
     switch (l) { case _OutlineLevel.root: return Colors.teal; case _OutlineLevel.volume: return Colors.indigo; case _OutlineLevel.chapter: return Colors.orange; case _OutlineLevel.leaf: return Colors.grey; }
   }
 
+  /// 统计分卷大纲下所有章节的总数（全局计数）
+  int _globalChapterCount() {
+    final volumesNode = _nodeAt('1');
+    if (volumesNode == null) return 0;
+    int count = 0;
+    for (final vol in volumesNode.children) {
+      count += vol.children.length;
+    }
+    return count;
+  }
+
   /// parentPath下该叫什么名字
   String _autoName(String parentPath) {
     final parent = _nodeAt(parentPath);
     final depth = _depthOf(parentPath) + 1; // 新子节点的深度
-    final n = (parent?.children.length ?? 0) + 1;
+    final localN = (parent?.children.length ?? 0) + 1;
 
     // 父路径是"0"=全书总纲 → 大节点N
-    if (parentPath == '0') return '大节点$n';
+    if (parentPath == '0') return '大节点$localN';
     // 父路径在"0/"下 → 全书总纲的子孙
     if (parentPath.startsWith('0/')) {
-      if (depth == 2) return '大节点$n';
-      return '小节点$n';
+      if (depth == 2) return '大节点$localN';
+      return '小节点$localN';
     }
-    // 父路径是"1"=分卷大纲 → 卷N
-    if (parentPath == '1') return '卷$n：未命名';
-    // 父路径在"1/"下 → 分卷大纲的子孙
+    // 父路径是"1"=分卷大纲 → 卷N（弹窗后会替换名称）
+    if (parentPath == '1') return '卷$localN：未命名';
+    // 父路径在"1/"下 → 分卷大纲的子孙（章节用全局编号）
     if (parentPath.startsWith('1/')) {
-      if (depth == 3) return '第$n章';
-      return '小节点$n';
+      if (depth == 3) {
+        // 全局章节编号：统计所有卷中全部现有章节数 + 1
+        final globalN = _globalChapterCount() + 1;
+        return '第${globalN}章';
+      }
+      return '小节点$localN';
     }
     // 通用回退
-    if (depth == 1) return '大节点$n';
-    if (depth == 2) return '第$n章';
-    return '小节点$n';
+    if (depth == 1) return '大节点$localN';
+    if (depth == 2) return '第$localN章';
+    return '小节点$localN';
   }
 
   void _addChild(String parentPath) {
+    // 新建章节或分卷时弹出命名窗口
+    final isVolume = parentPath == '1'; // 分卷大纲下建分卷
+    final isChapter = parentPath.startsWith('1/') && _depthOf(parentPath) == 2; // 卷下建章节
+    if (isVolume || isChapter) {
+      _addWithDialog(parentPath, isVolume ? '新分卷' : '新章节');
+      return;
+    }
+    _doAddChild(parentPath, _autoName(parentPath));
+  }
+
+  Future<void> _addWithDialog(String parentPath, String title) async {
+    final nameCtrl = TextEditingController();
+    final defaultName = _autoName(parentPath);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            controller: nameCtrl,
+            autofocus: true,
+            decoration: InputDecoration(hintText: '输入名称（默认：$defaultName）', border: const OutlineInputBorder()),
+          ),
+          const SizedBox(height: 8),
+          Text(title == '新章节' ? '直接点击确认则章节名显示"待定"' : '直接点击确认则使用默认名称',
+            style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          FilledButton(onPressed: () {
+            final input = nameCtrl.text.trim();
+            if (title == '新章节') {
+              Navigator.pop(ctx, input.isEmpty ? '$defaultName：待定' : '$defaultName：$input');
+            } else {
+              Navigator.pop(ctx, input.isEmpty ? defaultName : input);
+            }
+          }, child: const Text('确认')),
+        ],
+      ),
+    );
+    if (name != null && mounted) {
+      _doAddChild(parentPath, name);
+    }
+  }
+
+  void _doAddChild(String parentPath, String name) {
     final p = _nodeAt(parentPath); if (p == null) return;
     setState(() {
-      final name = _autoName(parentPath);
       p.children.add(OutlineNode(title: name, content: ''));
       _collapsedPaths.remove(parentPath);
       final newIdx = p.children.length - 1;
