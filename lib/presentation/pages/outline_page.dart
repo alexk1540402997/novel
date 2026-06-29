@@ -19,7 +19,6 @@ class OutlineNode {
   Map<String, dynamic> toJson() => {'title': title, 'content': content, 'children': children.map((e) => e.toJson()).toList()};
 }
 
-/// 层级类型
 enum _OutlineLevel { root, volume, chapter, leaf }
 
 class OutlinePage extends StatefulWidget {
@@ -31,7 +30,6 @@ class _OutlinePageState extends State<OutlinePage> {
   String? _novel; OutlineNode? _root; String? _selectedPath;
   final _titleCtrl = TextEditingController(), _contentCtrl = TextEditingController();
   bool _autoSavePending = false;
-  /// 折叠状态：记录被折叠的节点路径（折叠后其子节点不渲染）
   final Set<String> _collapsedPaths = {};
 
   @override void initState() { super.initState(); WidgetsBinding.instance.addPostFrameCallback((_) => _check()); }
@@ -73,101 +71,61 @@ class _OutlinePageState extends State<OutlinePage> {
     await File(fp).writeAsString(jsonEncode(_root!.toJson()));
   }
 
+  // ===== 路径系统：空串=根节点，"0"=第1子，"0/0"=第1子的第1子 =====
   OutlineNode? _nodeAt(String p) {
     if (_root == null) return null;
-    final parts = p.split('/').map(int.parse).toList(); var n = _root!;
-    for (final i in parts) { if (i >= n.children.length) return null; n = n.children[i]; }
+    if (p.isEmpty) return _root;
+    var n = _root!;
+    for (final s in p.split('/')) {
+      final i = int.parse(s);
+      if (i >= n.children.length) return null;
+      n = n.children[i];
+    }
     return n;
   }
 
-  int _depthOf(String path) => path.split('/').length - 1;
+  int _depthOf(String p) => p.isEmpty ? 0 : p.split('/').length;
 
-  _OutlineLevel _levelOf(String path) {
-    final d = _depthOf(path);
+  _OutlineLevel _levelOf(String p) {
+    final d = _depthOf(p);
     if (d == 0) return _OutlineLevel.root;
     if (d == 1) return _OutlineLevel.volume;
     if (d == 2) return _OutlineLevel.chapter;
     return _OutlineLevel.leaf;
   }
 
-  String _levelLabel(_OutlineLevel level) {
-    switch (level) {
-      case _OutlineLevel.root: return '根';
-      case _OutlineLevel.volume: return '卷/篇';
-      case _OutlineLevel.chapter: return '章';
-      case _OutlineLevel.leaf: return '节';
-    }
+  String _levelLabel(_OutlineLevel l) {
+    switch (l) { case _OutlineLevel.root: return '根'; case _OutlineLevel.volume: return '卷/篇'; case _OutlineLevel.chapter: return '章'; case _OutlineLevel.leaf: return '节'; }
   }
 
-  Color _levelColor(_OutlineLevel level) {
-    switch (level) {
-      case _OutlineLevel.root: return Colors.teal;
-      case _OutlineLevel.volume: return Colors.indigo;
-      case _OutlineLevel.chapter: return Colors.orange;
-      case _OutlineLevel.leaf: return Colors.grey;
-    }
+  Color _levelColor(_OutlineLevel l) {
+    switch (l) { case _OutlineLevel.root: return Colors.teal; case _OutlineLevel.volume: return Colors.indigo; case _OutlineLevel.chapter: return Colors.orange; case _OutlineLevel.leaf: return Colors.grey; }
   }
 
-  /// 判断路径对应的父节点是否为"全书总纲"或其子节点
-  bool _isUnderWholeBook(String path) {
-    if (_root == null) return false;
-    final parts = path.split('/').map(int.parse).toList();
-    if (parts.isEmpty || parts[0] >= _root!.children.length) return false;
-    // 第一个子节点是"全书总纲"
-    final firstChild = _root!.children.isNotEmpty ? _root!.children[0].title : '';
-    if (!firstChild.contains('全书总纲') && !firstChild.contains('总纲')) return false;
-    return parts[0] == 0;
-  }
-
-  /// 判断路径对应的父节点是否为"分卷大纲"或其子节点
-  bool _isUnderVolumes(String path) {
-    if (_root == null) return false;
-    final parts = path.split('/').map(int.parse).toList();
-    if (parts.isEmpty || parts[0] >= _root!.children.length) return false;
-    final secondChild = _root!.children.length > 1 ? _root!.children[1].title : '';
-    if (!secondChild.contains('分卷') && !secondChild.contains('卷大纲')) return false;
-    return parts[0] == 1;
-  }
-
-  /// 智能命名：根据父节点上下文自动生成子节点名称
+  /// parentPath下该叫什么名字
   String _autoName(String parentPath) {
     final parent = _nodeAt(parentPath);
-    final depth = _depthOf(parentPath) + 1;
-    final existingCount = parent?.children.length ?? 0;
-    final newIndex = existingCount + 1;
+    final depth = _depthOf(parentPath) + 1; // 新子节点的深度
+    final n = (parent?.children.length ?? 0) + 1;
 
-    // 判断父节点类型
-    final grandparentPath = parentPath.contains('/')
-        ? parentPath.substring(0, parentPath.lastIndexOf('/'))
-        : '';
-
-    // 全书总纲下的子节点 → 大节点N
-    if (_isUnderWholeBook(parentPath)) {
-      if (depth == 2) return '大节点$newIndex';
-      if (depth >= 3) return '小节点$newIndex';
+    // 父路径是"0"=全书总纲 → 大节点N
+    if (parentPath == '0') return '大节点$n';
+    // 父路径在"0/"下 → 全书总纲的子孙
+    if (parentPath.startsWith('0/')) {
+      if (depth == 2) return '大节点$n';
+      return '小节点$n';
     }
-    // 之前已经在全书总纲下的分支内
-    if (parentPath == '0') {
-      // parent是全书总纲本身 → 它的子节点叫"大节点N"
-      return '大节点$newIndex';
+    // 父路径是"1"=分卷大纲 → 卷N
+    if (parentPath == '1') return '卷$n：未命名';
+    // 父路径在"1/"下 → 分卷大纲的子孙
+    if (parentPath.startsWith('1/')) {
+      if (depth == 3) return '第$n章';
+      return '小节点$n';
     }
-
-    // 分卷大纲下的子节点 → 卷N：未命名
-    if (parentPath == '1') {
-      return '卷$newIndex：未命名';
-    }
-    // 分卷大纲下更深层级
-    if (_isUnderVolumes(parentPath)) {
-      if (depth == 3) return '第$newIndex章';
-      if (depth > 3) return '小节点$newIndex';
-    }
-
     // 通用回退
-    switch (depth) {
-      case 1: return '大节点$newIndex';
-      case 2: return '第$newIndex章';
-      default: return '小节点$newIndex';
-    }
+    if (depth == 1) return '大节点$n';
+    if (depth == 2) return '第$n章';
+    return '小节点$n';
   }
 
   void _addChild(String parentPath) {
@@ -175,54 +133,45 @@ class _OutlinePageState extends State<OutlinePage> {
     setState(() {
       final name = _autoName(parentPath);
       p.children.add(OutlineNode(title: name, content: ''));
-      // 自动展开父节点
       _collapsedPaths.remove(parentPath);
-      _selectNode('$parentPath/${p.children.length - 1}');
+      final newIdx = p.children.length - 1;
+      _selectNode(parentPath.isEmpty ? '$newIdx' : '$parentPath/$newIdx');
     });
     _save();
   }
 
-  void _addSibling(String path) {
-    if (path == '0') return;
-    final ls = path.lastIndexOf('/');
-    final pp = path.substring(0, ls);
-    final p = _nodeAt(pp); if (p == null) return;
-    final name = _autoName(pp);
+  void _addSibling(String nodePath) {
+    if (nodePath.isEmpty) return; // 根节点不能有兄弟
+    final ls = nodePath.lastIndexOf('/');
+    final parentPath = ls == -1 ? '' : nodePath.substring(0, ls);
+    final p = _nodeAt(parentPath); if (p == null) return;
+    final name = _autoName(parentPath);
     setState(() {
       p.children.add(OutlineNode(title: name, content: ''));
-      _selectNode('$pp/${p.children.length - 1}');
+      final newIdx = p.children.length - 1;
+      _selectNode(parentPath.isEmpty ? '$newIdx' : '$parentPath/$newIdx');
     });
     _save();
   }
 
-  void _deleteNode(String path) {
-    if (path == '0') return;
-    final ls = path.lastIndexOf('/');
-    final pp = path.substring(0, ls); final idx = int.parse(path.substring(ls + 1));
-    final p = _nodeAt(pp); if (p == null) return;
+  void _deleteNode(String nodePath) {
+    if (nodePath.isEmpty) return; // 不能删除根节点
+    final ls = nodePath.lastIndexOf('/');
+    final parentPath = ls == -1 ? '' : nodePath.substring(0, ls);
+    final idx = int.parse(nodePath.substring(ls + 1));
+    final p = _nodeAt(parentPath); if (p == null) return;
     setState(() { p.children.removeAt(idx); _selectedPath = null; });
     _save();
   }
 
-  void _selectNode(String path) {
-    final n = _nodeAt(path); if (n == null) return;
+  void _selectNode(String p) {
+    final n = _nodeAt(p); if (n == null) return;
     _titleCtrl.text = n.title; _contentCtrl.text = n.content;
-    setState(() => _selectedPath = path);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已选中: ${n.title}'), backgroundColor: Colors.teal, duration: const Duration(seconds: 1)),
-      );
-    }
+    setState(() => _selectedPath = p);
   }
 
-  void _toggleCollapse(String path) {
-    setState(() {
-      if (_collapsedPaths.contains(path)) {
-        _collapsedPaths.remove(path);
-      } else {
-        _collapsedPaths.add(path);
-      }
-    });
+  void _toggleCollapse(String p) {
+    setState(() => _collapsedPaths.contains(p) ? _collapsedPaths.remove(p) : _collapsedPaths.add(p));
   }
 
   void _saveCurrent() {
@@ -237,6 +186,7 @@ class _OutlinePageState extends State<OutlinePage> {
     });
   }
 
+  // ===== BUILD =====
   @override
   Widget build(BuildContext context) {
     final n = context.watch<SelectedNovelProvider>().selectedNovel;
@@ -244,58 +194,51 @@ class _OutlinePageState extends State<OutlinePage> {
     if (_novel == null) return const Center(child: Text('请先选择一部小说'));
     if (_root == null) return const Center(child: CircularProgressIndicator());
 
-    final isWide = MediaQuery.of(context).size.width > 600;
-    if (isWide) {
-      return IntrinsicHeight(
-        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        SizedBox(width: 280, child: _buildTreePanel()),
-        const VerticalDivider(width: 1),
-        Expanded(child: _buildEditor()),
-      ]),
-    );
-    } else {
-      return Column(children: [
-        SizedBox(height: 220, child: _buildTreePanel()),
-        const Divider(height: 1),
-        Expanded(child: _buildEditor()),
-      ]);
-    }
+    return LayoutBuilder(builder: (ctx, constraints) {
+      final h = constraints.maxHeight;
+      final isWide = constraints.maxWidth > 600;
+      if (isWide) {
+        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          SizedBox(width: 280, height: h, child: _buildTreePanel()),
+          const VerticalDivider(width: 1),
+          Expanded(child: _buildEditor()),
+        ]);
+      } else {
+        return Column(children: [
+          SizedBox(height: 220, child: _buildTreePanel()),
+          const Divider(height: 1),
+          Expanded(child: _buildEditor()),
+        ]);
+      }
+    });
   }
 
+  // ===== 树面板 =====
   Widget _buildTreePanel() => Column(children: [
     Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        border: const Border(bottom: BorderSide(color: Color(0xFFE0E0E0))),
-      ),
+      decoration: BoxDecoration(color: Colors.grey[50], border: const Border(bottom: BorderSide(color: Color(0xFFE0E0E0)))),
       child: Row(children: [
         const Icon(Icons.account_tree, size: 18, color: Colors.teal),
         const SizedBox(width: 8),
         const Text('大纲目录', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
         const Spacer(),
-        // 图例
         _legendDot(Colors.indigo, '卷'),
         _legendDot(Colors.orange, '章'),
         const SizedBox(width: 8),
-        // 上下文感知的添加按钮
         InkWell(
           onTap: () {
-            // 如果有选中节点，在其下添加子节点；否则在根下添加
             if (_selectedPath != null && _nodeAt(_selectedPath!) != null) {
               _addChild(_selectedPath!);
             } else {
-              _addChild('0');
+              // 无选中时在根下添加（全书总纲或分卷大纲外的第三项）
+              _addChild('');
             }
           },
           borderRadius: BorderRadius.circular(6),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.teal.withAlpha(20),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.teal.withAlpha(80)),
-            ),
+            decoration: BoxDecoration(color: Colors.teal.withAlpha(20), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.teal.withAlpha(80))),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               const Icon(Icons.add, size: 14, color: Colors.teal),
               const SizedBox(width: 2),
@@ -307,23 +250,14 @@ class _OutlinePageState extends State<OutlinePage> {
     ),
     Expanded(
       child: _root != null && _root!.children.isNotEmpty
-        ? ListView(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            children: _buildTreeList('0', _root!, 0),
-          )
-        : Center(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.auto_stories, size: 36, color: Colors.grey[300]),
-              const SizedBox(height: 8),
-              Text('大纲为空', style: TextStyle(color: Colors.grey[500], fontSize: 13)),
-              const SizedBox(height: 4),
-              TextButton.icon(
-                onPressed: () => _addChild('0'),
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('添加一级节点', style: TextStyle(fontSize: 12)),
-              ),
-            ]),
-          ),
+        ? ListView(padding: const EdgeInsets.symmetric(vertical: 4), children: _buildTreeList('', _root!, 0))
+        : Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.auto_stories, size: 36, color: Colors.grey[300]),
+            const SizedBox(height: 8),
+            Text('大纲为空', style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+            const SizedBox(height: 4),
+            TextButton.icon(onPressed: () => _addChild(''), icon: const Icon(Icons.add, size: 16), label: const Text('添加一级节点', style: TextStyle(fontSize: 12))),
+          ])),
     ),
   ]);
 
@@ -336,178 +270,93 @@ class _OutlinePageState extends State<OutlinePage> {
     ]),
   );
 
-  List<Widget> _buildTreeList(String path, OutlineNode node, int depth) {
+  List<Widget> _buildTreeList(String p, OutlineNode node, int depth) {
     final w = <Widget>[];
-    final sel = _selectedPath == path;
-    final level = _levelOf(path);
+    final sel = _selectedPath == p;
+    final level = _levelOf(p);
     final isRoot = depth == 0;
     final hasChildren = node.children.isNotEmpty;
-    final isCollapsed = _collapsedPaths.contains(path);
+    final isCollapsed = _collapsedPaths.contains(p);
 
-    // 用 ListTile 确保点击可靠
     w.add(ListTile(
-      onTap: () => _selectNode(path),
+      onTap: () => _selectNode(p),
       selected: sel,
       selectedTileColor: _levelColor(level).withAlpha(20),
       dense: true,
       visualDensity: VisualDensity.compact,
       contentPadding: EdgeInsets.only(left: 8.0 + depth * 20, right: 8),
       minLeadingWidth: 0,
-      // 折叠箭头或占位
       leading: hasChildren
-          ? GestureDetector(
-              onTap: () => _toggleCollapse(path),
-              child: Icon(
-                isCollapsed ? Icons.keyboard_arrow_right : Icons.keyboard_arrow_down,
-                size: 16,
-                color: sel ? _levelColor(level) : Colors.grey[400],
-              ),
-            )
-          : const SizedBox(width: 16),
-      // 标题
+        ? GestureDetector(
+            onTap: () => _toggleCollapse(p),
+            child: Icon(isCollapsed ? Icons.keyboard_arrow_right : Icons.keyboard_arrow_down, size: 16, color: sel ? _levelColor(level) : Colors.grey[400]),
+          )
+        : const SizedBox(width: 16),
       title: Row(children: [
-        if (!isRoot)
-          Container(
-            width: 6, height: 6,
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: _levelColor(level),
-              shape: BoxShape.circle,
-            ),
-          ),
-        if (!isRoot)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            margin: const EdgeInsets.only(right: 6),
-            decoration: BoxDecoration(
-              color: _levelColor(level).withAlpha(25),
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: Text(_levelLabel(level), style: TextStyle(fontSize: 9, color: _levelColor(level), fontWeight: FontWeight.w500)),
-          ),
-        Flexible(
-          child: Text(
-            node.title,
-            style: TextStyle(
-              fontSize: isRoot ? 14 : 13,
-              fontWeight: isRoot ? FontWeight.bold : (sel ? FontWeight.w600 : FontWeight.normal),
-              color: sel ? _levelColor(level) : null,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
+        if (!isRoot) Container(width: 6, height: 6, margin: const EdgeInsets.only(right: 8), decoration: BoxDecoration(color: _levelColor(level), shape: BoxShape.circle)),
+        if (!isRoot) Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1), margin: const EdgeInsets.only(right: 6), decoration: BoxDecoration(color: _levelColor(level).withAlpha(25), borderRadius: BorderRadius.circular(3)), child: Text(_levelLabel(level), style: TextStyle(fontSize: 9, color: _levelColor(level), fontWeight: FontWeight.w500))),
+        Flexible(child: Text(node.title, style: TextStyle(fontSize: isRoot ? 14 : 13, fontWeight: isRoot ? FontWeight.bold : (sel ? FontWeight.w600 : FontWeight.normal), color: sel ? _levelColor(level) : null), maxLines: 1, overflow: TextOverflow.ellipsis)),
       ]),
-      // 选中时显示操作按钮
       trailing: sel
-          ? Row(mainAxisSize: MainAxisSize.min, children: [
-              GestureDetector(
-                onTap: () => _addChild(path),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: Text('＋子', style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500)),
-                ),
-              ),
-              if (path != '0') ...[
-                const SizedBox(width: 2),
-                GestureDetector(
-                  onTap: () => _addSibling(path),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Text('＋同', style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500)),
-                  ),
-                ),
-              ],
-            ])
-          : null,
+        ? Row(mainAxisSize: MainAxisSize.min, children: [
+            GestureDetector(onTap: () => _addChild(p), child: Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(3)), child: Text('＋子', style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500)))),
+            if (p.isNotEmpty) ...[
+              const SizedBox(width: 2),
+              GestureDetector(onTap: () => _addSibling(p), child: Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(3)), child: Text('＋同', style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500)))),
+            ],
+          ])
+        : null,
     ));
 
-    // 递归渲染子节点
     if (!isCollapsed) {
       for (var i = 0; i < node.children.length; i++) {
-        w.addAll(_buildTreeList('$path/$i', node.children[i], depth + 1));
+        w.addAll(_buildTreeList(p.isEmpty ? '$i' : '$p/$i', node.children[i], depth + 1));
       }
     }
     return w;
   }
 
+  // ===== 编辑器 =====
   Widget _buildEditor() {
     if (_selectedPath == null) {
-      return Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.touch_app, size: 48, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text('从左侧选择大纲节点进行编辑', style: TextStyle(fontSize: 15, color: Colors.grey[500])),
-          const SizedBox(height: 8),
-          Text('点击节点可编辑标题和内容\n使用「＋子」和「＋同」按钮添加节点', textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: Colors.grey[400])),
-          const SizedBox(height: 24),
-          // 快速操作按钮
-          Row(mainAxisSize: MainAxisSize.min, children: [
-            _quickBtn('添加总纲', Icons.book, () => _addChild('0')),
-            const SizedBox(width: 12),
-            _quickBtn('添加分卷', Icons.collections_bookmark, () {
-              if (_root != null && _root!.children.length > 1) {
-                _addChild('0/1');
-              } else {
-                _addChild('0');
-              }
-            }),
-            const SizedBox(width: 12),
-            _quickBtn('添加章节', Icons.article, () {
-              if (_root != null && _root!.children.length > 1 && _root!.children[1].children.isNotEmpty) {
-                _addChild('0/1/0');
-              } else {
-                _addChild('0');
-              }
-            }),
-            const SizedBox(width: 12),
-            _quickBtn('灵感建议', Icons.lightbulb, _showOutlineInspiration),
-          ]),
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.touch_app, size: 48, color: Colors.grey[300]),
+        const SizedBox(height: 16),
+        Text('从左侧选择大纲节点进行编辑', style: TextStyle(fontSize: 15, color: Colors.grey[500])),
+        const SizedBox(height: 8),
+        Text('点击节点可编辑标题和内容\n使用「＋子」和「＋同」按钮添加节点', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey[400])),
+        const SizedBox(height: 24),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          _quickBtn('添加总纲', Icons.book, () => _addChild('0')),
+          const SizedBox(width: 12),
+          _quickBtn('添加分卷', Icons.collections_bookmark, () => _addChild('1')),
+          const SizedBox(width: 12),
+          _quickBtn('添加章节', Icons.article, () {
+            // 在第一卷下添加章节；若无卷则在分卷大纲下加卷再加章
+            final volNode = _nodeAt('1');
+            if (volNode != null && volNode.children.isNotEmpty) {
+              _addChild('1/0');
+            } else {
+              _addChild('1');
+            }
+          }),
+          const SizedBox(width: 12),
+          _quickBtn('灵感建议', Icons.lightbulb, _showOutlineInspiration),
         ]),
-      );
+      ]));
     }
 
     final level = _levelOf(_selectedPath!);
     final levelColor = _levelColor(level);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // 编辑器工具栏
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          border: const Border(bottom: BorderSide(color: Color(0xFFE0E0E0))),
-        ),
+        decoration: BoxDecoration(color: Colors.grey[50], border: const Border(bottom: BorderSide(color: Color(0xFFE0E0E0)))),
         child: Row(children: [
-          // 层级标签
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: levelColor.withAlpha(25),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: levelColor.withAlpha(80)),
-            ),
-            child: Text(_levelLabel(level), style: TextStyle(fontSize: 12, color: levelColor, fontWeight: FontWeight.w600)),
-          ),
+          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: levelColor.withAlpha(25), borderRadius: BorderRadius.circular(6), border: Border.all(color: levelColor.withAlpha(80))), child: Text(_levelLabel(level), style: TextStyle(fontSize: 12, color: levelColor, fontWeight: FontWeight.w600))),
           const SizedBox(width: 12),
-          // 路径面包屑
-          Expanded(
-            child: Text(
-              _buildBreadcrumb(_selectedPath!),
-              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-              maxLines: 1, overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          // 操作按钮（文字标签）
+          Expanded(child: Text(_buildBreadcrumb(_selectedPath!), style: TextStyle(fontSize: 12, color: Colors.grey[500]), maxLines: 1, overflow: TextOverflow.ellipsis)),
           _toolBtn('＋子', Icons.subdirectory_arrow_right, () => _addChild(_selectedPath!)),
           const SizedBox(width: 4),
           _toolBtn('＋同', Icons.add, () => _addSibling(_selectedPath!)),
@@ -515,38 +364,23 @@ class _OutlinePageState extends State<OutlinePage> {
           _toolBtn('删除', Icons.delete_outline, () => _deleteNode(_selectedPath!), isRed: true),
         ]),
       ),
-      // 标题编辑
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
         child: TextField(
           controller: _titleCtrl,
-          decoration: InputDecoration(
-            hintText: '输入标题...',
-            border: const OutlineInputBorder(),
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            prefixIcon: Icon(Icons.title, size: 18, color: levelColor),
-          ),
+          decoration: InputDecoration(hintText: '输入标题...', border: const OutlineInputBorder(), isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), prefixIcon: Icon(Icons.title, size: 18, color: levelColor)),
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           onChanged: (_) => _saveCurrent(),
         ),
       ),
       const SizedBox(height: 8),
-      // 内容编辑
       Expanded(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: TextField(
-            controller: _contentCtrl,
-            maxLines: null,
-            expands: true,
-            textAlignVertical: TextAlignVertical.top,
+            controller: _contentCtrl, maxLines: null, expands: true, textAlignVertical: TextAlignVertical.top,
             style: const TextStyle(fontSize: 15, height: 1.8),
-            decoration: const InputDecoration(
-              hintText: '在此编写大纲内容...\n\n💡 提示：\n• 总纲 → 写故事主线、核心冲突、主题思想\n• 分卷 → 写每卷的故事阶段、主要事件、角色发展\n• 章节 → 写单章情节、场景、角色互动、伏笔线索',
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.all(14),
-            ),
+            decoration: const InputDecoration(hintText: '在此编写大纲内容...', border: OutlineInputBorder(), contentPadding: EdgeInsets.all(14)),
             onChanged: (_) => _saveCurrent(),
           ),
         ),
@@ -554,18 +388,12 @@ class _OutlinePageState extends State<OutlinePage> {
     ]);
   }
 
-  /// 工具栏文字按钮
   Widget _toolBtn(String label, IconData icon, VoidCallback onTap, {bool isRed = false}) {
     return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
+      onTap: onTap, borderRadius: BorderRadius.circular(4),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-        decoration: BoxDecoration(
-          color: isRed ? Colors.red.withAlpha(15) : Colors.grey[100],
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: isRed ? Colors.red.withAlpha(60) : Colors.grey[300]!),
-        ),
+        decoration: BoxDecoration(color: isRed ? Colors.red.withAlpha(15) : Colors.grey[100], borderRadius: BorderRadius.circular(4), border: Border.all(color: isRed ? Colors.red.withAlpha(60) : Colors.grey[300]!)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 12, color: isRed ? Colors.red : Colors.grey[600]),
           const SizedBox(width: 2),
@@ -575,33 +403,26 @@ class _OutlinePageState extends State<OutlinePage> {
     );
   }
 
-  String _buildBreadcrumb(String path) {
-    final parts = path.split('/').map(int.parse).toList();
-    final crumbs = <String>[];
+  String _buildBreadcrumb(String p) {
+    final crumbs = <String>[_root!.title];
+    if (p.isEmpty) return crumbs.join(' > ');
     var node = _root!;
-    crumbs.add(node.title);
-    for (var i = 1; i < parts.length; i++) {
-      if (parts[i] < node.children.length) {
-        node = node.children[parts[i]];
-        crumbs.add(node.title);
-      }
+    for (final s in p.split('/')) {
+      final i = int.parse(s);
+      if (i >= node.children.length) break;
+      node = node.children[i];
+      crumbs.add(node.title);
     }
     return crumbs.join(' > ');
   }
 
-  /// 灵感建议：根据大纲上下文调用LLM获取创作灵感
+  // ===== 灵感建议 =====
   Future<void> _showOutlineInspiration() async {
     final buf = StringBuffer();
-    void collect(OutlineNode n, int depth) {
-      buf.writeln('${"  " * depth}${n.title}: ${n.content}');
-      for (final c in n.children) collect(c, depth + 1);
-    }
+    void collect(OutlineNode n, int depth) { buf.writeln('${"  " * depth}${n.title}: ${n.content}'); for (final c in n.children) collect(c, depth + 1); }
     if (_root != null) collect(_root!, 0);
     final ctx = buf.toString();
-    if (ctx.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('大纲为空')));
-      return;
-    }
+    if (ctx.trim().isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('大纲为空'))); return; }
     try {
       final config = ConfigService().getAll();
       final llmName = config?['choose_configs']?['final_chapter_llm'] ?? 'Claude Sonnet 4.6';
@@ -620,21 +441,11 @@ class _OutlinePageState extends State<OutlinePage> {
         )),
         actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))],
       ));
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('失败: $e')));
-    }
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('失败: $e'))); }
   }
 
   Widget _quickBtn(String label, IconData icon, VoidCallback onTap) {
-    return OutlinedButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 16),
-      label: Text(label, style: const TextStyle(fontSize: 12)),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        minimumSize: Size.zero,
-      ),
-    );
+    return OutlinedButton.icon(onPressed: onTap, icon: Icon(icon, size: 16), label: Text(label, style: const TextStyle(fontSize: 12)), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), minimumSize: Size.zero));
   }
 
   @override void dispose() { _titleCtrl.dispose(); _contentCtrl.dispose(); super.dispose(); }

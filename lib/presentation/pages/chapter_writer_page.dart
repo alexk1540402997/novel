@@ -860,11 +860,13 @@ $outline
   /// 构建分卷分组+章节列表项
   List<Widget> _buildChapterListItems() {
     final items = <Widget>[];
-    final assignedChapters = <int>{};
+    // 若无大纲结构，所有章节默认归属"卷一"
+    if (_volumeGroups.isEmpty && _chapterNums.isNotEmpty) {
+      _volumeGroups.add(_VolumeGroup(title: '卷一', chapterNumbers: List.from(_chapterNums)));
+    }
     for (var vi = 0; vi < _volumeGroups.length; vi++) {
       final vol = _volumeGroups[vi];
       final isCollapsed = _collapsedVolumes.contains(vi);
-      assignedChapters.addAll(vol.chapterNumbers);
       // 卷标题
       items.add(InkWell(
         onTap: () {
@@ -877,9 +879,9 @@ $outline
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           color: Colors.grey[100],
           child: Row(children: [
-            Icon(isCollapsed ? Icons.keyboard_arrow_right : Icons.keyboard_arrow_down, size: 16, color: Colors.indigo),
+            Icon(isCollapsed ? Icons.keyboard_arrow_right : Icons.keyboard_arrow_down, size: 16, color: Colors.teal),
             const SizedBox(width: 4),
-            Expanded(child: Text(vol.title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.indigo))),
+            Expanded(child: Text(vol.title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.teal))),
             Text('${vol.chapterNumbers.length}章', style: TextStyle(fontSize: 10, color: Colors.grey[500])),
           ]),
         ),
@@ -897,29 +899,6 @@ $outline
             onTap: () => _selectChapter(num),
           ));
         }
-      }
-    }
-    // 未归属任何卷的章节
-    final unassigned = _chapterNums.where((n) => !assignedChapters.contains(n)).toList();
-    if (unassigned.isNotEmpty) {
-      items.add(Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        color: Colors.grey[100],
-        child: const Row(children: [
-          Icon(Icons.article, size: 14, color: Colors.grey),
-          SizedBox(width: 4),
-          Text('未归类章节', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey)),
-        ]),
-      ));
-      for (final num in unassigned) {
-        final isSelected = _currentChapter == num;
-        items.add(ListTile(
-          selected: isSelected,
-          dense: true,
-          contentPadding: const EdgeInsets.only(left: 28, right: 8),
-          title: Text('第$num章', style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-          onTap: () => _selectChapter(num),
-        ));
       }
     }
     return items;
@@ -1081,5 +1060,5 @@ $outline
 class _VolumeGroup {
   final String title;
   final List<int> chapterNumbers;
-  const _VolumeGroup({required this.title, required this.chapterNumbers});
+  _VolumeGroup({required this.title, required this.chapterNumbers});
 }
