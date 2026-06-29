@@ -716,109 +716,162 @@ $outline
                   contextMenuBuilder: _buildContextMenu,
                 ),
           ),
-          // 底部精简AI聊天栏
+          // 底部AI写作助手栏
           Container(
-            height: _chatExpanded ? 240 : 44,
+            height: _chatExpanded ? 310 : 44,
             decoration: BoxDecoration(
               color: Colors.grey[50],
               border: const Border(top: BorderSide(color: Color(0xFFE0E0E0))),
             ),
             child: Column(children: [
-              // 收起态：单行按钮栏
+              // 收起态：单行按钮栏（精简）
               if (!_chatExpanded)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   child: Row(children: [
+                    // AI品牌标签
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(color: Colors.teal.withAlpha(25), borderRadius: BorderRadius.circular(12)),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.auto_awesome, size: 14, color: Colors.teal[600]),
-                        const SizedBox(width: 4),
-                        Text('AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.teal[600])),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: [Colors.teal[400]!, Colors.teal[600]!]),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.auto_awesome, size: 14, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text('妙笔AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
                       ]),
                     ),
                     const Spacer(),
                     _miniBtn('续写', () => _generateFromOutline(), icon: Icons.auto_stories, color: Colors.blue),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 2),
                     _miniBtn('润色', _polishSelectedText, icon: Icons.edit_note, color: Colors.teal),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 2),
                     _miniBtn('错字', _checkTypos, icon: Icons.spellcheck, color: Colors.purple),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 2),
+                    _miniBtn('命名', _autoNameChapter, icon: Icons.drive_file_rename_outline, color: Colors.deepOrange),
+                    const SizedBox(width: 2),
                     _miniBtn('摘要', _autoSummary, icon: Icons.summarize, color: Colors.indigo),
                     const SizedBox(width: 4),
-                    Container(
-                      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
-                      child: IconButton(icon: const Icon(Icons.keyboard_arrow_up, size: 16), onPressed: () => setState(() => _chatExpanded = true), padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 24, minHeight: 24)),
+                    GestureDetector(
+                      onTap: () => setState(() => _chatExpanded = true),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
+                        child: const Icon(Icons.keyboard_arrow_up, size: 18, color: Colors.grey),
+                      ),
                     ),
                   ]),
                 ),
-              // 展开态：大纲输入 + 按钮 + 生成结果
+              // 展开态：宽松的AI工作面板
               if (_chatExpanded)
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      // 大纲输入
-                      Expanded(
-                        flex: 3,
-                        child: TextField(
-                          controller: _outlineCtrl,
-                          maxLines: null,
-                          expands: true,
-                          style: const TextStyle(fontSize: 12),
-                          decoration: InputDecoration(
-                            hintText: '输入本章大纲要点，点击「大纲→正文」生成...',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                            isDense: true, contentPadding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      // 顶部标题栏
+                      Row(children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(colors: [Colors.teal[400]!, Colors.teal[600]!]),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.auto_awesome, size: 16, color: Colors.white),
+                            SizedBox(width: 6),
+                            Text('妙笔 AI 写作助手', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                          ]),
+                        ),
+                        const Spacer(),
+                        Text('大纲→正文', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => setState(() => _chatExpanded = false),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
+                            child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                              Text('收起', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                              SizedBox(width: 2),
+                              Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.grey),
+                            ]),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      // 操作区
-                      SizedBox(
-                        width: 180,
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                          FilledButton.icon(
-                            onPressed: _generating ? null : _generateFromOutline,
-                            icon: _generating ? const SizedBox(width:14,height:14,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)) : const Icon(Icons.auto_awesome, size: 14),
-                            label: Text(_generating ? '生成中...' : '大纲→正文', style: const TextStyle(fontSize: 12)),
-                            style: FilledButton.styleFrom(backgroundColor: Colors.teal, minimumSize: const Size(0, 32)),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(children: [
-                            Expanded(child: _miniBtn('续写', () => _generateFromOutline(), icon: Icons.auto_stories, color: Colors.blue)),
-                            const SizedBox(width: 4),
-                            Expanded(child: _miniBtn('润色', _polishSelectedText, icon: Icons.edit_note, color: Colors.teal)),
-                          ]),
-                          const SizedBox(height: 4),
-                          Row(children: [
-                            Expanded(child: _miniBtn('错字', _checkTypos, icon: Icons.spellcheck, color: Colors.purple)),
-                            const SizedBox(width: 4),
-                            Expanded(child: _miniBtn('摘要', _autoSummary, icon: Icons.summarize, color: Colors.indigo)),
-                            const SizedBox(width: 4),
-                            Expanded(child: _miniBtn('收起', () => setState(() => _chatExpanded = false), icon: Icons.keyboard_arrow_down, color: Colors.grey)),
-                          ]),
-                          // 生成结果
-                          if (_generatedText != null)
-                            Expanded(
-                              child: Container(
-                                margin: const EdgeInsets.only(top: 4),
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.teal[100]!)),
-                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                  Row(children: [
-                                    const Text('✨ 结果', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-                                    const Spacer(),
-                                    GestureDetector(onTap: _applyGenerated, child: Text('应用', style: TextStyle(fontSize: 11, color: Colors.teal[700]))),
-                                    const SizedBox(width: 12),
-                                    GestureDetector(onTap: () => setState(() => _generatedText = null), child: const Text('丢弃', style: TextStyle(fontSize: 11, color: Colors.red))),
-                                  ]),
-                                  const SizedBox(height: 4),
-                                  Expanded(child: SingleChildScrollView(child: Text(_generatedText!, style: const TextStyle(fontSize: 11, height: 1.4)))),
-                                ]),
+                      ]),
+                      const SizedBox(height: 8),
+                      // 主体区：大纲输入 + 操作按钮（Row布局）
+                      Expanded(
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          // 大纲输入区
+                          Expanded(
+                            flex: 5,
+                            child: TextField(
+                              controller: _outlineCtrl,
+                              maxLines: null,
+                              expands: true,
+                              textAlignVertical: TextAlignVertical.top,
+                              style: const TextStyle(fontSize: 13, height: 1.6),
+                              decoration: InputDecoration(
+                                hintText: '📋 输入本章大纲要点（每行一条，越具体AI生成的越好）\n\n例：\n- 开场场景：主角在密林中遭遇妖兽袭击\n- 主要事件：击退妖兽后发现神秘洞穴\n- 角色互动：遇到受伤的同门师妹\n- 结尾悬念：洞穴深处传来诡异的声音',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                contentPadding: const EdgeInsets.all(10),
                               ),
                             ),
+                          ),
+                          const SizedBox(width: 10),
+                          // 右侧操作区
+                          SizedBox(
+                            width: 155,
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                              // 主操作按钮：大纲→正文
+                              SizedBox(
+                                height: 38,
+                                child: FilledButton.icon(
+                                  onPressed: _generating ? null : _generateFromOutline,
+                                  icon: _generating
+                                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                    : const Icon(Icons.auto_awesome, size: 16),
+                                  label: Text(_generating ? 'AI生成中...' : '大纲→正文', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                  style: FilledButton.styleFrom(backgroundColor: Colors.teal, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              // 辅助按钮网格
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  child: Wrap(spacing: 4, runSpacing: 4, children: [
+                                    _actionChip('续写', Icons.auto_stories, Colors.blue, () => _generateFromOutline()),
+                                    _actionChip('润色', Icons.edit_note, Colors.teal, _polishSelectedText),
+                                    _actionChip('错字', Icons.spellcheck, Colors.purple, _checkTypos),
+                                    _actionChip('命名', Icons.drive_file_rename_outline, Colors.deepOrange, _autoNameChapter),
+                                    _actionChip('摘要', Icons.summarize, Colors.indigo, _autoSummary),
+                                    _actionChip('插图', Icons.image, Colors.pink, _generateSceneImage),
+                                  ]),
+                                ),
+                              ),
+                              // 生成结果预览
+                              if (_generatedText != null)
+                                Container(
+                                  margin: const EdgeInsets.only(top: 6),
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.teal[200]!)),
+                                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                                    Row(children: [
+                                      const Icon(Icons.auto_awesome, size: 12, color: Colors.teal),
+                                      const SizedBox(width: 4),
+                                      const Text('生成结果', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                                      const Spacer(),
+                                      GestureDetector(onTap: _applyGenerated, child: Text('应用', style: TextStyle(fontSize: 10, color: Colors.teal[700]))),
+                                      const SizedBox(width: 8),
+                                      GestureDetector(onTap: () => setState(() => _generatedText = null), child: const Text('丢弃', style: TextStyle(fontSize: 10, color: Colors.red))),
+                                    ]),
+                                    const SizedBox(height: 4),
+                                    Text(_generatedText!, maxLines: 4, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, height: 1.5)),
+                                  ]),
+                                ),
+                            ]),
+                          ),
                         ]),
                       ),
                     ]),
@@ -1005,6 +1058,26 @@ $outline
     );
   }
 
+  /// 操作芯片（用于展开的AI面板）
+  Widget _actionChip(String label, IconData icon, Color color, VoidCallback? onTap) {
+    return Material(
+      color: color.withAlpha(18),
+      borderRadius: BorderRadius.circular(6),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 3),
+            Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w500)),
+          ]),
+        ),
+      ),
+    );
+  }
+
   /// 构建分卷分组+章节列表项
   List<Widget> _buildChapterListItems() {
     final items = <Widget>[];
@@ -1110,6 +1183,77 @@ $outline
         SnackBar(content: Text('摘要生成失败: $e'), backgroundColor: Colors.red),
       );
     }
+  }
+
+  /// AI总结章节正文 → 生成10字以内章节名（同步到大纲和目录）
+  Future<void> _autoNameChapter() async {
+    if (_currentChapter == null || _novel == null) return;
+    final text = _textCtrl.text;
+    if (text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先撰写章节内容'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    showDialog(context: context, barrierDismissible: false,
+      builder: (_) => const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        CircularProgressIndicator(),
+        SizedBox(height: 16),
+        Text('AI正在分析章节...\n生成10字章节名', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+      ])),
+    );
+    try {
+      final config = ConfigService().getAll();
+      final llmName = config?['choose_configs']?['final_chapter_llm'] ?? 'Claude Sonnet 4.6';
+      final llm = LLMUseCase();
+      final snippet = text.length > 3000 ? text.substring(0, 3000) : text;
+      final prompt = '根据以下小说章节内容，生成一个简洁有力的章节名（10个字以内，不含标点符号，不需要书名号）：\n\n$snippet\n\n章节名：';
+      final result = await llm.generateText(prompt, llmName);
+      if (mounted) Navigator.pop(context);
+      String chapterName = result.trim();
+      chapterName = chapterName.replaceAll(RegExp(r'["\n\r《》]'), '').trim();
+      if (chapterName.length > 10) chapterName = chapterName.substring(0, 10);
+      if (chapterName.isNotEmpty && mounted) {
+        await _saveChapterMeta(_currentChapter!, chapterName);
+        await _syncChapterNameToOutline(_currentChapter!, chapterName);
+        setState(() {});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('章节名已生成：$chapterName'), backgroundColor: Colors.teal));
+        }
+      }
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('章节名生成失败: $e'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  /// 将AI生成的章节名同步到大纲（更新已有章节名称，不新增）
+  Future<void> _syncChapterNameToOutline(int num, String name) async {
+    try {
+      final base = await NovelFolderService().getNovelsFolderPath();
+      final f = File('$base/$_novel/outline.json');
+      if (!await f.exists()) return;
+      final root = jsonDecode(await f.readAsString());
+      final volumes = (root['children'] as List?);
+      if (volumes == null || volumes.length < 2) return;
+      final volNode = volumes[1];
+      final volChildren = volNode['children'] as List? ?? [];
+      for (final vol in volChildren) {
+        final chList = vol['children'] as List? ?? [];
+        for (final ch in chList) {
+          final title = ch['title'] as String? ?? '';
+          if (title.contains('第$num章')) {
+            ch['title'] = '第$num章：$name';
+            await f.writeAsString(jsonEncode(root));
+            return;
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   Widget _tip(String text) => Padding(

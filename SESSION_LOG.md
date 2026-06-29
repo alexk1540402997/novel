@@ -1,48 +1,66 @@
 # SESSION_LOG.md — 「妙笔小说」
 
-## 最新APK
+## 最新APK (2026-06-30)
 ```
-C:\Users\AlexK\Desktop\novel-app\build\app\outputs\flutter-apk\app-arm64-v8a-release.apk
+Release: build\app\outputs\flutter-apk\app-release.apk (52.9MB 通用)
+Debug:   build\app\outputs\flutter-apk\app-debug.apk
 ```
-18.1MB | flutter clean后构建 | 0 errors
+编译通过 | 0 errors
 
-## 安装到手机前必须：先卸载旧版APP！
+## 本轮 (06-30) 新增实现
 
-## 当前状态 (2026-06-29)
+### ✅ 2.6 AI栏展开界面重新设计
+- 展开高度 240→310px，更宽松
+- AI品牌：渐变色"妙笔 AI 写作助手"标签
+- 按钮改为Wrap+Chip布局
+- 新增"命名"和"插图"按钮入口
 
-### ✅ 已修复
-1. **大纲页面全量重写** — 路径系统修正(空串=根)，LayoutBuilder布局，ListTile点击
-2. **灵感全面优化** — 共享InspirationService：加载指示器+本地缓存+刷新按钮+格式清理
-3. **大模型选择器** — 设置页可选择文字/图片模型
-4. **AI写作助手移除** — 全局面板已删除，功能分散到各模块
-5. **章节写作2栏布局** — 左列表+右编辑+底AI栏
-6. **写作记忆备注** — ChapterMemory.userNotes字段
-7. **设置页控件** — 字体Slider+保存间隔Dropdown+导出格式Dropdown
-8. **章节列表分卷** — 从大纲读取卷结构，可折叠
-9. **灵感覆盖5模块** — 大纲/章节/世界观/角色/伏笔
+### ✅ 2.7 AI总结章节名
+- `_autoNameChapter()`: 正文→AI→≤10字章节名
+- `_syncChapterNameToOutline()`: 更新大纲已有章节
+- 收起态和展开态均有入口
 
-### ⚠️ 待完成
-- 章节列表：下一分卷按钮+章节命名弹窗+大纲双向同步
-- 灵感：单个条目(非整个模块)的灵感按钮
-- 底部AI栏：展开时空间利用+AI总结章节名
-- 错字检查按钮独立化
-- 手机窄屏布局验证
+### ✅ 3.1 首次进入自动生成
+- `_InspirationDialogState.initState()` 无缓存自动触发
 
-## 大模型配置 (Agnes)
-- Base URL: https://apihub.agnes-ai.com/v1
-- 文字模型: agnes-2.0-flash
-- 图片模型: agnes-image-2.1-flash
-- API Key: sk-OOFCX59YdR27YohHhfs6T4fPcgnTdbdug1cjrQTbolalfwF8
+### ✅ 3.2 空状态灵感
+- `showInspirationDialog` 新增 `emptyFallback` 参数
+- 5模块调用点均已更新
+
+### ✅ 3.3 单条灵感按钮
+- 世界观/角色/伏笔每个条目卡片都有💡按钮
+
+### ✅ 4.1 女频角色定位
+- 男频9角色 vs 女频10角色，自动检测受众
+- `getCharacterRolesForAudience()` 
+- 编辑对话框显示当前频道标签
+
+### ✅ 4.2 AI生成角色图
+- 新增角色时可勾选"生成角色插图"
+- 卡片顶部显示角色图
+- `NovelCharacter` 新增 `imagePath` 字段
+
+## ⚠️ 待用户模拟器验证
+- 1.1 大纲去"＋同"：代码正确，需交互验证
+- 2.1 章节命名弹窗：代码正确，需交互验证  
+- 1.2 大节点3加小节点：代码正确，需交互验证
+
+## ❌ 本轮未实现
+- 2.2 章节序号排序逻辑
+- 2.3 新章节在选中后插入
+- 2.8 文生插图完整预览流程
 
 ## 构建命令
 ```bash
 export MSYS2_ARG_CONV_EXCL="*"
 cd "C:/Users/AlexK/Desktop/novel-app"
-/d/src/flutter/bin/flutter clean
-/d/src/flutter/bin/flutter build apk --release --split-per-abi
+/d/src/flutter/bin/flutter build apk --release    # 通用APK
+/d/src/flutter/bin/flutter build apk --debug      # 调试版
 ```
 
-## 关键教训
-- IntrinsicHeight在Row中会导致布局异常
-- 大纲路径空串=根，"0"=第1子（之前路径偏移导致节点错位）
-- 模拟器能跑不代表真机能跑，需要格外注意窄屏布局
+## 验证方法
+```bash
+adb -s emulator-5554 install -r build/app/outputs/flutter-apk/app-release.apk
+adb -s emulator-5554 shell am start -n com.example.ai_novelgenerator_flutter/.MainActivity
+adb -s emulator-5554 exec-out screencap -p > screen.png
+```

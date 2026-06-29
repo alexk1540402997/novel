@@ -53,6 +53,7 @@ class NovelCharacter {
   List<CharacterEvent> keyEvents; // 关键事件
   String currentStatus; // 当前状态
   String notes; // 备注
+  String imagePath; // 角色插图路径（4.2需求）
   final DateTime createdAt;
   DateTime updatedAt;
 
@@ -71,6 +72,7 @@ class NovelCharacter {
     this.keyEvents = const [],
     this.currentStatus = '',
     this.notes = '',
+    this.imagePath = '',
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : createdAt = createdAt ?? DateTime.now(),
@@ -96,6 +98,7 @@ class NovelCharacter {
               .toList() ?? [],
       currentStatus: json['currentStatus'] ?? '',
       notes: json['notes'] ?? '',
+      imagePath: json['imagePath'] ?? '',
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
           : DateTime.now(),
@@ -113,6 +116,7 @@ class NovelCharacter {
         'firstChapter': firstChapter,
         'keyEvents': keyEvents.map((e) => e.toJson()).toList(),
         'currentStatus': currentStatus, 'notes': notes,
+        'imagePath': imagePath,
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
       };
@@ -122,5 +126,19 @@ class NovelCharacter {
       relationships.map((r) => r.targetName).toSet();
 }
 
-const characterRoles = ['主角', '女主', '红颜', '重要配角', '导师/前辈', '主要反派', '次要反派', '路人', '其他'];
+/// 男频角色定位
+const maleCharacterRoles = ['主角', '女主', '红颜', '重要配角', '导师/前辈', '主要反派', '次要反派', '路人', '其他'];
+
+/// 女频角色定位（区别于男频：更侧重感情线和女性成长视角）
+const femaleCharacterRoles = ['女主', '男主', '知己/闺蜜', '情敌', '重要配角', '长辈/师尊', '主要反派', '次要反派', '路人', '其他'];
+
+/// 按频道获取角色定位列表
+List<String> getCharacterRolesForAudience(String? audience) {
+  if (audience == '女频') return femaleCharacterRoles;
+  return maleCharacterRoles; // 默认男频
+}
+
+/// 保留向后兼容
+const characterRoles = maleCharacterRoles;
+
 const relationTypes = ['师徒', '恋人', '敌对', '朋友', '亲人', '同门', '同盟', '上下级', '其他'];

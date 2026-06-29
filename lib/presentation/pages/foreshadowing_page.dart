@@ -39,13 +39,33 @@ class _ForeshadowingPageState extends State<ForeshadowingPage> {
   }
 
   Future<void> _showForeshadowingInspiration() async {
-    if (_all.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请先添加伏笔'))); return; }
     final ctxBuf = StringBuffer();
-    for (final f in _all) { ctxBuf.writeln('${f.name}: ${f.description} [状态:${f.status}]'); }
+    if (_all.isNotEmpty) {
+      for (final f in _all) { ctxBuf.writeln('${f.name}: ${f.description} [状态:${f.status}]'); }
+    }
     await InspirationService().showInspirationDialog(
       context: context, cacheKey: 'foreshadowing_all', contextData: ctxBuf.toString(),
       promptPrefix: '作为网文编辑，提供3-5条伏笔发展灵感（揭晓时机、反转设计、与角色互动）',
       dialogTitle: '伏笔灵感',
+      emptyFallback: '网文小说伏笔设计，包括伏笔埋设位置、揭晓时机、反转手法等要素',
+    );
+  }
+
+  /// 单条伏笔灵感
+  Future<void> _showItemInspiration(Foreshadowing f) async {
+    final ctxBuf = StringBuffer();
+    ctxBuf.writeln('伏笔名：${f.name}');
+    ctxBuf.writeln('描述：${f.description}');
+    ctxBuf.writeln('状态：${f.status}');
+    if (f.plantChapter > 0) ctxBuf.writeln('埋设：第${f.plantChapter}章');
+    if (f.reapChapter > 0) ctxBuf.writeln('回收：第${f.reapChapter}章');
+    if (f.notes.isNotEmpty) ctxBuf.writeln('备注：${f.notes}');
+    await InspirationService().showInspirationDialog(
+      context: context,
+      cacheKey: 'foreshadowing_item_${f.id}',
+      contextData: ctxBuf.toString(),
+      promptPrefix: '针对以下伏笔，提供3-5条发展和揭晓时机灵感',
+      dialogTitle: '「${f.name}」灵感',
     );
   }
 
@@ -196,6 +216,16 @@ class _ForeshadowingPageState extends State<ForeshadowingPage> {
                       border: Border.all(color: _statusColor(f.status).withAlpha(80))),
                   child: Text(f.status,
                       style: TextStyle(fontSize: 11, color: _statusColor(f.status)))),
+              InkWell(
+                onTap: () => _showItemInspiration(f),
+                borderRadius: BorderRadius.circular(4),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  margin: const EdgeInsets.only(right: 4),
+                  decoration: BoxDecoration(color: Colors.orange.withAlpha(20), borderRadius: BorderRadius.circular(4)),
+                  child: const Icon(Icons.lightbulb, size: 16, color: Colors.orange),
+                ),
+              ),
               PopupMenuButton<String>(
                   iconSize: 18,
                   onSelected: (a) {

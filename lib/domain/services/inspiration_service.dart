@@ -18,13 +18,20 @@ class InspirationService {
   final Map<String, _InspirationCache> _cache = {};
 
   /// 显示灵感对话框（自动缓存/刷新/加载状态）
+  /// [emptyFallback]：当contextData为空时，提供替换描述（如"玄幻小说世界观"）
   Future<void> showInspirationDialog({
     required BuildContext context,
     required String cacheKey,        // 缓存键（如 'worldbook_all', 'character_item_3'）
     required String contextData,     // 发送给LLM的上下文
     required String promptPrefix,    // LLM提示词前缀
     required String dialogTitle,     // 对话框标题
+    String emptyFallback = '',       // 空上下文时的回退描述（3.2需求）
   }) async {
+    // 构建有效上下文（空上下文时使用回退描述）
+    final effectiveContext = contextData.trim().isEmpty
+        ? (emptyFallback.isNotEmpty ? emptyFallback : '暂无具体内容，请根据常见网文创作模式提供灵感')
+        : contextData;
+
     // 检查缓存
     final cached = _cache[cacheKey];
     List<String> ideas = cached?.ideas ?? [];
@@ -39,7 +46,7 @@ class InspirationService {
         onRefresh: () async {
           final config = ConfigService().getAll();
           final llmName = config?['choose_configs']?['final_chapter_llm'] ?? 'Claude Sonnet 4.6';
-          final prompt = '$promptPrefix（用"---"分隔每条建议，不要使用**、##等Markdown符号，用纯文本）：\n\n$contextData';
+          final prompt = '$promptPrefix（用"---"分隔每条建议，不要使用**、##等Markdown符号，用纯文本）：\n\n$effectiveContext';
           final result = await LLMUseCase().generateText(prompt, llmName);
           final raw = result.split('---').map((e) => _cleanFormat(e.trim())).where((e) => e.isNotEmpty).toList();
           _cache[cacheKey] = _InspirationCache(raw);
@@ -81,7 +88,14 @@ class _InspirationDialogState extends State<_InspirationDialog> {
   late List<String> _ideas;
   bool _loading = false;
 
-  @override void initState() { super.initState(); _ideas = widget.initialIdeas; }
+  @override void initState() {
+    super.initState();
+    _ideas = widget.initialIdeas;
+    // 3.1需求：无缓存时自动触发生成
+    if (!widget.hasCache) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+    }
+  }
 
   Future<void> _refresh() async {
     setState(() => _loading = true);

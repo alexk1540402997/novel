@@ -1,8 +1,13 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/character.dart';
 import '../../domain/services/character_service.dart';
+import '../../domain/services/image_generation_service.dart';
 import '../../domain/services/inspiration_service.dart';
+import '../../domain/services/novel_folder_service.dart';
 import '../pages/novel_architecture_page.dart'; // SelectedNovelProvider
 
 class CharacterPage extends StatefulWidget {
@@ -18,6 +23,7 @@ class _CharacterPageState extends State<CharacterPage> {
   String _search = '';
   bool _loading = false;
   String? _novel;
+  String? _detectedAudience;
   final _svc = CharacterService();
   final _searchCtrl = TextEditingController();
 
@@ -35,6 +41,25 @@ class _CharacterPageState extends State<CharacterPage> {
     }
   }
 
+  Future<void> _detectAudience() async {
+    if (_novel == null) return;
+    try {
+      final base = await NovelFolderService().getNovelsFolderPath();
+      final f = File('$base/$_novel/worldbook.json');
+      if (await f.exists()) {
+        final list = jsonDecode(await f.readAsString()) as List;
+        if (list.isNotEmpty) {
+          final notes = list.first['notes'] as String? ?? '';
+          if (notes.contains('女频')) {
+            _detectedAudience = '女频';
+          } else if (notes.contains('男频')) {
+            _detectedAudience = '男频';
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
   Future<void> _load() async {
     if (_novel == null) return;
     setState(() => _loading = true);
@@ -44,6 +69,7 @@ class _CharacterPageState extends State<CharacterPage> {
       _loading = false;
       _apply();
     });
+    await _detectAudience();
   }
 
   void _apply() {
@@ -89,6 +115,7 @@ class _CharacterPageState extends State<CharacterPage> {
         status = c.currentStatus, notes = c.notes;
     String personalityStr = c.personality.join('、');
     String abilityStr = c.abilities.join('、');
+    bool genImage = false;
     int firstCh = c.firstChapter;
 
     final r = await showDialog<NovelCharacter>(
@@ -141,10 +168,10 @@ class _CharacterPageState extends State<CharacterPage> {
                   ]),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<String>(
-                    value: characterRoles.contains(role) ? role : '其他',
+                    value: getCharacterRolesForAudience(_detectedAudience).contains(role) ? role : '其他',
                     decoration: const InputDecoration(
                         labelText: '角色定位', border: OutlineInputBorder(), isDense: true),
-                    items: characterRoles
+                    items: getCharacterRolesForAudience(_detectedAudience)
                         .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                         .toList(),
                     onChanged: (v) {
@@ -156,7 +183,7 @@ class _CharacterPageState extends State<CharacterPage> {
                     },
                   ),
                   // 当选择"其他"或role不在预设列表中时，显示手动输入框
-                  if (!characterRoles.contains(role) && role != '其他')
+                  if (!getCharacterRolesForAudience(_detectedAudience).contains(role) && role != '其他')
                     Padding(
                       padding: const EdgeInsets.only(top: 10),
                       child: TextField(
@@ -166,6 +193,15 @@ class _CharacterPageState extends State<CharacterPage> {
                         controller: TextEditingController(text: role),
                         onChanged: (v) => role = v,
                       ),
+                    ),
+                  if (isNew)
+                    CheckboxListTile(
+                      title: const Text('生成角色插图', style: TextStyle(fontSize: 14)),
+                      subtitle: const Text('AI将根据角色信息生成插图', style: TextStyle(fontSize: 11)),
+                      value: genImage,
+                      onChanged: (v) => setD(() => genImage = v ?? false),
+                      dense: true,
+                      controlAffinity: ListTileControlAffinity.leading,
                     ),
                   const SizedBox(height: 10),
                   TextField(
@@ -245,7 +281,7 @@ class _CharacterPageState extends State<CharacterPage> {
                     abilities: abilityStr.split('、').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
                     relationships: c.relationships,
                     firstChapter: firstCh, keyEvents: c.keyEvents,
-                    currentStatus: status, notes: notes, createdAt: c.createdAt,
+                    currentStatus: status, notes: notes, imagePath: c.imagePath, createdAt: c.createdAt,
                   );
                   Navigator.pop(ctx, updated);
                 },
@@ -260,7 +296,47 @@ class _CharacterPageState extends State<CharacterPage> {
     if (r != null && _novel != null) {
       if (isNew) await _svc.add(_novel!, r);
       else await _svc.update(_novel!, r);
-      _load();
+      await _load();
+      if (genImage) {
+        await _generateCharacterImage(r);
+      }
+    }
+  }
+
+  Future<void> _generateCharacterImage(NovelCharacter c) async {
+    if (_novel == null) return;
+    final desc = StringBuffer();
+    desc.writeln('角色：${c.name}，${c.gender}，${c.age}');
+    if (c.appearance.isNotEmpty) desc.writeln('外貌：${c.appearance}');
+    if (c.personality.isNotEmpty) desc.writeln('性格：${c.personality.join("、")}');
+    if (c.faction.isNotEmpty) desc.writeln('势力：${c.faction}');
+    desc.writeln('风格：Chinese illustration/animation style, character portrait');
+    try {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+      final imagePath = await ImageGenerationService().generateSceneImage(
+        sceneText: desc.toString(),
+        novelName: _novel!,
+        chapterNum: c.firstChapter,
+      );
+      if (!mounted) return;
+      Navigator.pop(context); // dismiss loading
+      if (imagePath != null) {
+        c.imagePath = imagePath;
+        await _svc.update(_novel!, c);
+        await _load();
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // dismiss loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('生成角色图失败：$e')),
+        );
+      }
     }
   }
 
@@ -332,7 +408,7 @@ class _CharacterPageState extends State<CharacterPage> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
-              items: ['全部', ...characterRoles]
+              items: ['全部', ...getCharacterRolesForAudience(_detectedAudience)]
                   .map((r) => DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontSize: 13))))
                   .toList(),
               onChanged: (v) { setState(() { _roleFilter = v; _apply(); }); },
@@ -355,13 +431,34 @@ class _CharacterPageState extends State<CharacterPage> {
       );
 
   Future<void> _showCharacterInspiration() async {
-    if (_allChars.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请先添加角色'))); return; }
     final ctxBuf = StringBuffer();
-    for (final c in _allChars) { ctxBuf.writeln('${c.role}·${c.name}: ${(c.personality ?? []).join("、")} ${c.faction ?? ""} ${(c.abilities ?? []).join("、")}'); }
+    if (_allChars.isNotEmpty) {
+      for (final c in _allChars) { ctxBuf.writeln('${c.role}·${c.name}: ${(c.personality ?? []).join("、")} ${c.faction ?? ""} ${(c.abilities ?? []).join("、")}'); }
+    }
     await InspirationService().showInspirationDialog(
       context: context, cacheKey: 'character_all', contextData: ctxBuf.toString(),
       promptPrefix: '作为网文角色设计师，提供3-5条角色发展灵感（角色弧光、关系发展、隐藏身份）',
       dialogTitle: '角色灵感',
+      emptyFallback: '网文小说角色设计，包括主角、反派、配角等角色的性格弧光和关系网络',
+    );
+  }
+
+  /// 单个角色灵感
+  Future<void> _showItemInspiration(NovelCharacter c) async {
+    final ctxBuf = StringBuffer();
+    ctxBuf.writeln('角色名：${c.name}');
+    ctxBuf.writeln('定位：${c.role}');
+    ctxBuf.writeln('性别：${c.gender}');
+    if (c.faction.isNotEmpty) ctxBuf.writeln('势力：${c.faction}');
+    if (c.personality.isNotEmpty) ctxBuf.writeln('性格：${c.personality.join("、")}');
+    if (c.abilities.isNotEmpty) ctxBuf.writeln('能力：${c.abilities.join("、")}');
+    if (c.notes.isNotEmpty) ctxBuf.writeln('备注：${c.notes}');
+    await InspirationService().showInspirationDialog(
+      context: context,
+      cacheKey: 'character_item_${c.id}',
+      contextData: ctxBuf.toString(),
+      promptPrefix: '针对以下角色，提供3-5条角色发展和关系深化灵感',
+      dialogTitle: '「${c.name}」灵感',
     );
   }
 
@@ -398,6 +495,17 @@ class _CharacterPageState extends State<CharacterPage> {
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (c.imagePath.isNotEmpty)
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: Image.file(
+                    File(c.imagePath),
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
               Row(children: [
                 CircleAvatar(
                     radius: 20,
@@ -411,6 +519,16 @@ class _CharacterPageState extends State<CharacterPage> {
                   Text('${c.gender} · ${c.role}',
                       style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                 ])),
+                InkWell(
+                  onTap: () => _showItemInspiration(c),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    margin: const EdgeInsets.only(right: 4),
+                    decoration: BoxDecoration(color: Colors.orange.withAlpha(20), borderRadius: BorderRadius.circular(4)),
+                    child: const Icon(Icons.lightbulb, size: 16, color: Colors.orange),
+                  ),
+                ),
                 PopupMenuButton<String>(
                     iconSize: 18,
                     onSelected: (a) {

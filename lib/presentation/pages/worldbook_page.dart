@@ -351,13 +351,26 @@ class _WorldbookPageState extends State<WorldbookPage> {
   }
 
   Future<void> _showWorldbookInspiration() async {
-    if (_allItems.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请先添加世界观条目'))); return; }
     final ctxBuf = StringBuffer();
-    for (final item in _allItems) { ctxBuf.writeln('【${item.category}】${item.name}: ${item.description}'); }
+    if (_allItems.isNotEmpty) {
+      for (final item in _allItems) { ctxBuf.writeln('【${item.category}】${item.name}: ${item.description}'); }
+    }
     await InspirationService().showInspirationDialog(
       context: context, cacheKey: 'worldbook_all', contextData: ctxBuf.toString(),
       promptPrefix: '作为网文世界观设计师，提供3-5条世界观拓展灵感（势力格局、力量体系、世界规则）',
       dialogTitle: '世界观灵感',
+      emptyFallback: '小说世界观设计，包括势力格局、力量体系、世界规则等要素',
+    );
+  }
+
+  /// 为单个世界观条目生成灵感
+  Future<void> _showItemInspiration(WorldSetting item) async {
+    await InspirationService().showInspirationDialog(
+      context: context,
+      cacheKey: 'worldbook_item_${item.id}',
+      contextData: '【${item.category}】${item.name}\n描述：${item.description}\n状态：${item.status}\n备注：${item.notes}',
+      promptPrefix: '针对以下世界观设定条目，提供3-5条深化灵感和扩展建议',
+      dialogTitle: '「${item.name}」灵感',
     );
   }
 
@@ -428,6 +441,16 @@ class _WorldbookPageState extends State<WorldbookPage> {
                     border: Border.all(color: _statusColor(item.status).withAlpha(80)),
                   ),
                   child: Text(item.status, style: TextStyle(fontSize: 11, color: _statusColor(item.status))),
+                ),
+                const SizedBox(width: 4),
+                InkWell(
+                  onTap: () => _showItemInspiration(item),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(color: Colors.orange.withAlpha(20), borderRadius: BorderRadius.circular(4)),
+                    child: const Icon(Icons.lightbulb, size: 16, color: Colors.orange),
+                  ),
                 ),
                 PopupMenuButton<String>(
                   iconSize: 18,
