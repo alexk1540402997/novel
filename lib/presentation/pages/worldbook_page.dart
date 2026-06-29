@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/world_setting.dart';
 import '../../domain/services/worldbook_service.dart';
-import '../../domain/usecases/llm_usecase.dart';
-import '../../utils/config_service.dart';
+import '../../domain/services/inspiration_service.dart';
 import '../pages/novel_architecture_page.dart'; // SelectedNovelProvider
 
 class WorldbookPage extends StatefulWidget {
@@ -352,35 +351,14 @@ class _WorldbookPageState extends State<WorldbookPage> {
   }
 
   Future<void> _showWorldbookInspiration() async {
-    if (_allItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请先添加世界观条目')));
-      return;
-    }
+    if (_allItems.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请先添加世界观条目'))); return; }
     final ctxBuf = StringBuffer();
-    for (final item in _allItems) {
-      ctxBuf.writeln('【${item.category}】${item.name}: ${item.description}');
-    }
-    try {
-      final config = ConfigService().getAll();
-      final llmName = config?['choose_configs']?['final_chapter_llm'] ?? 'Claude Sonnet 4.6';
-      final prompt = '作为资深网文世界观设计师，根据以下世界观设定，提供3-5条世界观拓展灵感建议（势力格局、力量体系、世界规则等），每条用"---"分隔：\n\n${ctxBuf}';
-      final result = await LLMUseCase().generateText(prompt, llmName);
-      final ideas = result.split('---').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-      if (!mounted) return;
-      showDialog(context: context, builder: (ctx) => AlertDialog(
-        title: const Row(children: [Icon(Icons.lightbulb, color: Colors.orange), SizedBox(width: 8), Text('世界观灵感')]),
-        content: SizedBox(width: 500, child: ListView.builder(
-          shrinkWrap: true, itemCount: ideas.length,
-          itemBuilder: (_, i) => Card(child: Padding(padding: const EdgeInsets.all(12), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(width: 24, height: 24, alignment: Alignment.center, decoration: BoxDecoration(color: Colors.orange[100], shape: BoxShape.circle), child: Text('${i+1}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange[800]))),
-            const SizedBox(width: 12), Expanded(child: Text(ideas[i], style: const TextStyle(fontSize: 13, height: 1.5))),
-          ]))),
-        )),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))],
-      ));
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('失败: $e')));
-    }
+    for (final item in _allItems) { ctxBuf.writeln('【${item.category}】${item.name}: ${item.description}'); }
+    await InspirationService().showInspirationDialog(
+      context: context, cacheKey: 'worldbook_all', contextData: ctxBuf.toString(),
+      promptPrefix: '作为网文世界观设计师，提供3-5条世界观拓展灵感（势力格局、力量体系、世界规则）',
+      dialogTitle: '世界观灵感',
+    );
   }
 
   Widget _buildStatsBar() {
