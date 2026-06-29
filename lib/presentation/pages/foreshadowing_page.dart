@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/foreshadowing.dart';
 import '../../domain/services/foreshadowing_service.dart';
+import '../../domain/usecases/llm_usecase.dart';
+import '../../utils/config_service.dart';
 import '../pages/novel_architecture_page.dart'; // SelectedNovelProvider
 
 class ForeshadowingPage extends StatefulWidget {
@@ -35,6 +37,38 @@ class _ForeshadowingPageState extends State<ForeshadowingPage> {
     setState(() => _loading = true);
     _all = await _svc.loadAll(_novel!);
     setState(() { _loading = false; _apply(); });
+  }
+
+  Future<void> _showForeshadowingInspiration() async {
+    if (_all.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请先添加伏笔')));
+      return;
+    }
+    final ctxBuf = StringBuffer();
+    for (final f in _all) {
+      ctxBuf.writeln('${f.name}: ${f.description} [状态:${f.status}]');
+    }
+    try {
+      final config = ConfigService().getAll();
+      final llmName = config?['choose_configs']?['final_chapter_llm'] ?? 'Claude Sonnet 4.6';
+      final prompt = '作为资深网文编辑，根据以下伏笔列表，提供3-5条伏笔发展灵感（揭晓时机、反转设计、与角色互动），每条用"---"分隔：\n\n${ctxBuf}';
+      final result = await LLMUseCase().generateText(prompt, llmName);
+      final ideas = result.split('---').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      if (!mounted) return;
+      showDialog(context: context, builder: (ctx) => AlertDialog(
+        title: const Row(children: [Icon(Icons.lightbulb, color: Colors.orange), SizedBox(width: 8), Text('伏笔灵感')]),
+        content: SizedBox(width: 500, child: ListView.builder(
+          shrinkWrap: true, itemCount: ideas.length,
+          itemBuilder: (_, i) => Card(child: Padding(padding: const EdgeInsets.all(12), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(width: 24, height: 24, alignment: Alignment.center, decoration: BoxDecoration(color: Colors.orange[100], shape: BoxShape.circle), child: Text('${i+1}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange[800]))),
+            const SizedBox(width: 12), Expanded(child: Text(ideas[i], style: const TextStyle(fontSize: 13, height: 1.5))),
+          ]))),
+        )),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))],
+      ));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('失败: $e')));
+    }
   }
 
   void _apply() {
@@ -137,6 +171,13 @@ class _ForeshadowingPageState extends State<ForeshadowingPage> {
         const SizedBox(width:12),
         Expanded(child:DropdownButtonFormField<String>(value:_statusFilter, hint:const Text('伏笔状态', style:TextStyle(fontSize:13, color:Colors.grey)), decoration:InputDecoration(border:OutlineInputBorder(borderRadius:BorderRadius.circular(8)),isDense:true,contentPadding:const EdgeInsets.symmetric(horizontal:12,vertical:10)), items:['全部',...foreshadowingStatuses].map((s)=>DropdownMenuItem(value:s,child:Text(s,style:const TextStyle(fontSize:13)))).toList(), onChanged:(v){setState((){_statusFilter=v;_apply();});})),
         const SizedBox(width:12),
+        OutlinedButton.icon(
+          onPressed:_showForeshadowingInspiration,
+          icon:const Icon(Icons.lightbulb,size:16,color:Colors.orange),
+          label:const Text('灵感',style:TextStyle(color:Colors.orange)),
+          style:OutlinedButton.styleFrom(padding:const EdgeInsets.symmetric(horizontal:12,vertical:10)),
+        ),
+        const SizedBox(width:8),
         FilledButton.icon(onPressed:()=>_edit(), icon:const Icon(Icons.add,size:18), label:const Text('添加')),
       ])),
       Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:8), child:Row(children:[

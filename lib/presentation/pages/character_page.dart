@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/character.dart';
 import '../../domain/services/character_service.dart';
+import '../../domain/usecases/llm_usecase.dart';
+import '../../utils/config_service.dart';
 import '../pages/novel_architecture_page.dart'; // SelectedNovelProvider
 
 class CharacterPage extends StatefulWidget {
@@ -338,6 +340,13 @@ class _CharacterPageState extends State<CharacterPage> {
             ),
           ),
           const SizedBox(width: 12),
+          OutlinedButton.icon(
+            onPressed: _showCharacterInspiration,
+            icon: const Icon(Icons.lightbulb, size: 16, color: Colors.orange),
+            label: const Text('灵感', style: TextStyle(color: Colors.orange)),
+            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
+          ),
+          const SizedBox(width: 8),
           FilledButton.icon(
             onPressed: () => _edit(),
             icon: const Icon(Icons.add, size: 18),
@@ -345,6 +354,38 @@ class _CharacterPageState extends State<CharacterPage> {
           ),
         ]),
       );
+
+  Future<void> _showCharacterInspiration() async {
+    if (_allChars.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请先添加角色')));
+      return;
+    }
+    final ctxBuf = StringBuffer();
+    for (final c in _allChars) {
+      ctxBuf.writeln('${c.role}·${c.name}: ${(c.personality ?? []).join("、")} ${c.faction ?? ""} ${(c.abilities ?? []).join("、")}');
+    }
+    try {
+      final config = ConfigService().getAll();
+      final llmName = config?['choose_configs']?['final_chapter_llm'] ?? 'Claude Sonnet 4.6';
+      final prompt = '作为资深网文角色设计师，根据以下角色列表，提供3-5条角色发展灵感建议（角色弧光、关系发展、隐藏身份等），每条用"---"分隔：\n\n${ctxBuf}';
+      final result = await LLMUseCase().generateText(prompt, llmName);
+      final ideas = result.split('---').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      if (!mounted) return;
+      showDialog(context: context, builder: (ctx) => AlertDialog(
+        title: const Row(children: [Icon(Icons.lightbulb, color: Colors.orange), SizedBox(width: 8), Text('角色灵感')]),
+        content: SizedBox(width: 500, child: ListView.builder(
+          shrinkWrap: true, itemCount: ideas.length,
+          itemBuilder: (_, i) => Card(child: Padding(padding: const EdgeInsets.all(12), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(width: 24, height: 24, alignment: Alignment.center, decoration: BoxDecoration(color: Colors.orange[100], shape: BoxShape.circle), child: Text('${i+1}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange[800]))),
+            const SizedBox(width: 12), Expanded(child: Text(ideas[i], style: const TextStyle(fontSize: 13, height: 1.5))),
+          ]))),
+        )),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))],
+      ));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('失败: $e')));
+    }
+  }
 
   Widget _statsBar() {
     return Padding(
