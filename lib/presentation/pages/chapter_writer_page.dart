@@ -139,6 +139,56 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
       await f.writeAsString(jsonEncode(_chapterNames.map((k, v) => MapEntry(k.toString(), v))));
     } catch (_) {}
   }
+  /// 长按分卷弹出菜单
+  void _showVolumeContextMenu(int volumeIdx, String volTitle) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(volTitle, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          ),
+          ListTile(
+            leading: const Icon(Icons.add, color: Colors.teal),
+            title: const Text('在此卷末尾添加新章节'),
+            subtitle: const Text('新建章节将追加到此分卷的最后一章之后'),
+            onTap: () {
+              Navigator.pop(ctx);
+              _addChapterToVolume(volumeIdx);
+            },
+          ),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
+  }
+
+  /// 在指定卷末尾添加新章节
+  Future<void> _addChapterToVolume(int volumeIdx) async {
+    if (_novel == null || volumeIdx >= _volumeGroups.length) return;
+    final svc = ChapterOutlineService();
+    final name = await svc.showChapterNameDialog(context);
+    if (name == null) return;
+
+    // 找到该卷最后一章
+    final lastChapterInVolume = _volumeGroups[volumeIdx].chapterNumbers.isNotEmpty
+        ? _volumeGroups[volumeIdx].chapterNumbers.last
+        : null;
+
+    final result = await svc.createChapter(
+      novelName: _novel!,
+      chapterName: name,
+      afterChapterNum: lastChapterInVolume,
+      volumeChapters: _volumeGroups.map((v) => v.chapterNumbers).toList(),
+      meta: _chapterNames,
+    );
+
+    await svc.insertChapterToOutline(_novel!, result.num, name, volumeIdx);
+    await _loadChapters();
+    _selectChapter(result.num);
+  }
+
   /// 创建新分卷
   Future<void> _addVolume() async {
     if (_novel == null) return;
@@ -1029,7 +1079,7 @@ $outline
     for (var vi = 0; vi < _volumeGroups.length; vi++) {
       final vol = _volumeGroups[vi];
       final isCollapsed = _collapsedVolumes.contains(vi);
-      // 卷标题
+      // 卷标题（长按可添加章节到此卷）
       items.add(InkWell(
         onTap: () {
           setState(() {
@@ -1037,6 +1087,7 @@ $outline
             else { _collapsedVolumes.add(vi); }
           });
         },
+        onLongPress: () => _showVolumeContextMenu(vi, vol.title),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           color: Colors.grey[100],

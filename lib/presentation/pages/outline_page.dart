@@ -65,11 +65,17 @@ class _OutlinePageState extends State<OutlinePage> {
   Map<String, dynamic> _toMap(OutlineNode n) => n.toJson();
   OutlineNode _fromMap(Map<String, dynamic> m) => OutlineNode.fromJson(m);
 
+  /// 直接遍历OutlineNode树，返回原节点引用（可修改）
   OutlineNode? _nodeAt(String p) {
     if (_root == null) return null;
-    final map = _toMap(_root!);
-    final result = ChapterOutlineService().nodeAt(map, p);
-    return result == null ? null : _fromMap(result);
+    if (p.isEmpty) return _root;
+    var n = _root!;
+    for (final s in p.split('/')) {
+      final i = int.parse(s);
+      if (i >= n.children.length) return null;
+      n = n.children[i];
+    }
+    return n;
   }
 
   int _depthOf(String p) => ChapterOutlineService().depthOf(p);

@@ -320,13 +320,21 @@ class ChapterOutlineService {
       }
       newNum = afterChapterNum + 1;
     } else {
-      targetVolumeIdx = volumeChapters.isNotEmpty ? volumeChapters.length - 1 : null;
-      // 计算最后一个章节号
+      // 无选中章节时：
+      // - 没有任何章节：加到第一卷（index 0）
+      // - 已有章节：加到最后一卷末尾
       int lastNum = 0;
-      for (final v in volumeChapters) {
-        for (final n in v) {
+      bool hasAnyChapter = false;
+      for (var vi = 0; vi < volumeChapters.length; vi++) {
+        for (final n in volumeChapters[vi]) {
           if (n > lastNum) lastNum = n;
+          hasAnyChapter = true;
         }
+      }
+      if (hasAnyChapter) {
+        targetVolumeIdx = volumeChapters.length - 1;
+      } else {
+        targetVolumeIdx = volumeChapters.isNotEmpty ? 0 : null; // 空章节→第一卷
       }
       newNum = lastNum == 0 ? 1 : lastNum + 1;
     }
