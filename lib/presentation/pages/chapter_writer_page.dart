@@ -9,6 +9,7 @@ import '../../domain/services/image_generation_service.dart';
 import '../../domain/usecases/llm_usecase.dart';
 import '../../utils/config_service.dart';
 import '../pages/novel_architecture_page.dart';
+import '../../domain/services/chapter_outline_service.dart';
 
 class ChapterWriterPage extends StatefulWidget {
   const ChapterWriterPage({super.key});
@@ -73,34 +74,9 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
   Future<void> _loadOutlineStructure() async {
     _volumeGroups = [];
     try {
-      final base = await NovelFolderService().getNovelsFolderPath();
-      final f = File('$base/$_novel/outline.json');
-      if (!await f.exists()) return;
-      final root = jsonDecode(await f.readAsString());
-      // 分卷大纲是 children[1]
-      final volumesNode = (root['children'] as List?)?.length == 2 ? root['children'][1] : null;
-      if (volumesNode == null) return;
-      final volumes = volumesNode['children'] as List? ?? [];
-      for (var vi = 0; vi < volumes.length; vi++) {
-        final v = volumes[vi];
-        final chapters = <int>[];
-        final chNodes = v['children'] as List? ?? [];
-        for (var ci = 0; ci < chNodes.length; ci++) {
-          // 第N章 → 章节号N
-          final title = chNodes[ci]['title'] as String? ?? '';
-          final match = RegExp(r'(\d+)').firstMatch(title);
-          if (match != null) {
-            chapters.add(int.parse(match.group(1)!));
-          } else {
-            // fallback: 按顺序编号
-            chapters.add(ci + 1);
-          }
-        }
-        _volumeGroups.add(_VolumeGroup(
-          title: v['title'] as String? ?? '卷${vi + 1}',
-          chapterNumbers: chapters,
-        ));
-      }
+      final outline = await ChapterOutlineService().loadOutline(_novel!);
+      final groups = ChapterOutlineService().buildVolumeGroups(outline);
+      _volumeGroups = groups.map((g) => _VolumeGroup(title: g.title, chapterNumbers: g.chapterNumbers)).toList();
     } catch (_) {}
   }
 
@@ -121,160 +97,21 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
 
   Future<void> _addChapter() async {
     if (_novel == null) return;
-    // 弹窗输入章节名
-    final nameCtrl = TextEditingController();
-    final name = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('新建章节'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
-            controller: nameCtrl,
-            autofocus: true,
-            decoration: const InputDecoration(hintText: '输入章节名称', border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 8),
-          Text('直接点击确认则章节名显示"待定"', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, nameCtrl.text.trim().isEmpty ? '待定' : nameCtrl.text.trim()), child: const Text('确认')),
-        ],
-      ),
-    );
+    final svc = ChapterOutlineService();
+    final name = await svc.showChapterNameDialog(context);
     if (name == null) return;
 
-    // 2.2/2.3: 确定插入位置——在所选章节之后，留在同一卷
-    int newNum;
-    int? targetVolumeIdx;
+    final result = await svc.createChapter(
+      novelName: _novel!,
+      chapterName: name,
+      afterChapterNum: _currentChapter,
+      volumeChapters: _volumeGroups.map((v) => v.chapterNumbers).toList(),
+      meta: _chapterNames,
+    );
 
-    if (_currentChapter != null && _volumeGroups.isNotEmpty) {
-      // 找到当前章节所在的卷
-      for (var vi = 0; vi < _volumeGroups.length; vi++) {
-        if (_volumeGroups[vi].chapterNumbers.contains(_currentChapter)) {
-          targetVolumeIdx = vi;
-          break;
-        }
-      }
-      // 在当前章节之后插入（全局序号+1）
-      newNum = _currentChapter! + 1;
-    } else {
-      // 无选中章节时追加到最后一卷末尾
-      targetVolumeIdx = _volumeGroups.isNotEmpty ? _volumeGroups.length - 1 : null;
-      newNum = _chapterNums.isEmpty ? 1 : (_chapterNums.last + 1);
-    }
-
-    // 重编号后续章节（newNum及之后的所有章节全部+1）
-    if (_chapterNums.isNotEmpty) {
-      final affected = _chapterNums.where((n) => n >= newNum).toList();
-      if (affected.isNotEmpty) {
-        await _renumberChapters(affected, 1);
-      }
-    }
-
-    // 创建新章节文件 + meta
-    await _fileSvc.saveChapter(_novel!, newNum, '');
-    await _saveChapterMeta(newNum, name);
-
-    // 同步到大纲（插入到指定卷的新位置）
-    await _syncChapterToOutlineAt(newNum, name, targetVolumeIdx);
-
-    // 重载
+    await svc.insertChapterToOutline(_novel!, result.num, name, result.volumeIdx);
     await _loadChapters();
-    _selectChapter(newNum);
-  }
-
-  /// 全局重编号章节：将affected列表中的章节号+delta
-  Future<void> _renumberChapters(List<int> affected, int delta) async {
-    // 从高到低处理，避免文件名冲突
-    affected.sort((a, b) => b.compareTo(a));
-    final base = await NovelFolderService().getNovelsFolderPath();
-    for (final oldNum in affected) {
-      final newNum = oldNum + delta;
-      // 重命名章节文件
-      final oldF = File('$base/$_novel/chapters/chapter_$oldNum.txt');
-      final newF = File('$base/$_novel/chapters/chapter_$newNum.txt');
-      if (await oldF.exists()) {
-        await newF.parent.create(recursive: true);
-        await oldF.rename(newF.path);
-      }
-      // 更新章节meta
-      if (_chapterNames.containsKey(oldNum)) {
-        _chapterNames[newNum] = _chapterNames[oldNum] ?? '';
-        _chapterNames.remove(oldNum);
-      }
-    }
-    // 保存更新后的meta
-    await _flushChapterMeta();
-
-    // 同步更新大纲中的章节编号
-    try {
-      final outlineF = File('$base/$_novel/outline.json');
-      if (await outlineF.exists()) {
-        final root = jsonDecode(await outlineF.readAsString());
-        final volumes = (root['children'] as List?);
-        if (volumes != null && volumes.length >= 2) {
-          final volNode = volumes[1];
-          final volChildren = volNode['children'] as List? ?? [];
-          for (final vol in volChildren) {
-            final chList = vol['children'] as List? ?? [];
-            for (final ch in chList) {
-              final title = ch['title'] as String? ?? '';
-              final match = RegExp(r'^第(\d+)章').firstMatch(title);
-              if (match != null) {
-                final oldChNum = int.parse(match.group(1)!);
-                if (affected.contains(oldChNum)) {
-                  final newChNum = oldChNum + delta;
-                  final rest = title.substring(match.end);
-                  ch['title'] = '第$newChNum章$rest';
-                }
-              }
-            }
-          }
-          await outlineF.writeAsString(jsonEncode(root));
-        }
-      }
-    } catch (_) {}
-  }
-
-  /// 将新章节同步到大纲，插入到指定卷中
-  Future<void> _syncChapterToOutlineAt(int num, String name, int? targetVolumeIdx) async {
-    try {
-      final base = await NovelFolderService().getNovelsFolderPath();
-      final f = File('$base/$_novel/outline.json');
-      if (!await f.exists()) return;
-      final root = jsonDecode(await f.readAsString());
-      final volumes = (root['children'] as List?);
-      if (volumes == null || volumes.length < 2) return;
-      final volNode = volumes[1]; // 分卷大纲
-      final volChildren = volNode['children'] as List? ?? [];
-      if (volChildren.isEmpty) return;
-
-      // 找到目标卷
-      final vi = (targetVolumeIdx != null && targetVolumeIdx < volChildren.length)
-          ? targetVolumeIdx
-          : volChildren.length - 1;
-      final targetVol = volChildren[vi];
-      final chList = targetVol['children'] as List? ?? [];
-
-      // 在正确的位置插入（按全局序号排序）
-      final newEntry = {'title': '第$num章：$name', 'content': '', 'children': []};
-      // 找到插入位置（保持升序）
-      int insertIdx = chList.length;
-      for (var i = 0; i < chList.length; i++) {
-        final t = chList[i]['title'] as String? ?? '';
-        final m = RegExp(r'(\d+)').firstMatch(t);
-        if (m != null) {
-          final existingNum = int.parse(m.group(1)!);
-          if (existingNum > num) {
-            insertIdx = i;
-            break;
-          }
-        }
-      }
-      chList.insert(insertIdx, newEntry);
-      await f.writeAsString(jsonEncode(root));
-    } catch (_) {}
+    _selectChapter(result.num);
   }
 
   /// 保存章节名到meta文件
@@ -304,56 +141,23 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
   }
   /// 创建新分卷
   Future<void> _addVolume() async {
-    final nameCtrl = TextEditingController();
-    final name = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('创建新分卷'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
-            controller: nameCtrl,
-            autofocus: true,
-            decoration: const InputDecoration(hintText: '输入分卷名称', border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 8),
-          Text('将在所有现有分卷之后创建', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, nameCtrl.text.trim().isEmpty ? '未命名分卷' : nameCtrl.text.trim()), child: const Text('确认')),
-        ],
-      ),
-    );
+    if (_novel == null) return;
+    final svc = ChapterOutlineService();
+    final name = await svc.showVolumeNameDialog(context);
     if (name == null) return;
-    // 同步到大纲
+
     try {
-      final base = await NovelFolderService().getNovelsFolderPath();
-      final f = File('$base/$_novel/outline.json');
-      Map<String, dynamic> root;
-      if (await f.exists()) {
-        root = jsonDecode(await f.readAsString());
-      } else {
-        root = {'title': '大纲', 'content': '', 'children': [
-          {'title': '全书总纲', 'content': '', 'children': []},
-          {'title': '分卷大纲', 'content': '', 'children': []},
-        ]};
-      }
-      final volumes = root['children'][1];
-      final volList = volumes['children'] as List? ?? [];
-      final newVolIdx = volList.length + 1;
-      volList.add({'title': '卷$newVolIdx：$name', 'content': '', 'children': []});
-      await f.writeAsString(jsonEncode(root));
-      // 同时创建第一个章节
-      final next = _chapterNums.isEmpty ? 1 : (_chapterNums.last + 1);
-      await _fileSvc.saveChapter(_novel!, next, '');
-      await _saveChapterMeta(next, '待定');
-      volList.last['children'] = [{'title': '第${next}章：待定', 'content': '', 'children': []}];
-      await f.writeAsString(jsonEncode(root));
+      final result = await svc.createVolume(
+        novelName: _novel!,
+        volName: name,
+        meta: _chapterNames,
+      );
       await _loadChapters();
-      _selectChapter(next);
+      // 找到新建章节并选中
+      _selectChapter(result.chapterNum);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已创建$name，并新建第$next章'), backgroundColor: Colors.teal),
+          SnackBar(content: Text('已创建${result.volTitle}，并新建第${result.chapterNum}章'), backgroundColor: Colors.teal),
         );
       }
     } catch (e) {
@@ -363,27 +167,6 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
         );
       }
     }
-  }
-
-  /// 同步章节名到分卷大纲
-  Future<void> _syncChapterToOutline(int num, String name) async {
-    try {
-      final base = await NovelFolderService().getNovelsFolderPath();
-      final f = File('$base/$_novel/outline.json');
-      if (!await f.exists()) return;
-      final root = jsonDecode(await f.readAsString());
-      final volumes = (root['children'] as List?);
-      if (volumes == null || volumes.length < 2) return;
-      final volNode = volumes[1]; // 分卷大纲
-      final volChildren = volNode['children'] as List? ?? [];
-      // 在最后一卷添加章节
-      if (volChildren.isNotEmpty) {
-        final lastVol = volChildren.last;
-        final chList = lastVol['children'] as List? ?? [];
-        chList.add({'title': '第${num}章：$name', 'content': '', 'children': []});
-        await f.writeAsString(jsonEncode(root));
-      }
-    } catch (_) {}
   }
 
   Future<void> _saveCurrent() async {
@@ -1373,7 +1156,24 @@ $outline
       if (chapterName.length > 10) chapterName = chapterName.substring(0, 10);
       if (chapterName.isNotEmpty && mounted) {
         await _saveChapterMeta(_currentChapter!, chapterName);
-        await _syncChapterNameToOutline(_currentChapter!, chapterName);
+        // 同步章节名到大纲
+        try {
+          final svc = ChapterOutlineService();
+          final outline = await svc.loadOutline(_novel!);
+          final vols = (outline['children'] as List?)?.length == 2 ? outline['children'][1] : null;
+          if (vols != null) {
+            for (final vol in (vols['children'] as List? ?? [])) {
+              for (final ch in (vol['children'] as List? ?? [])) {
+                final title = ch['title'] as String? ?? '';
+                if (title.contains('第$_currentChapter章')) {
+                  ch['title'] = '第$_currentChapter章：$chapterName';
+                  await svc.saveOutline(_novel!, outline);
+                  return;
+                }
+              }
+            }
+          }
+        } catch (_) {}
         setState(() {});
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1387,31 +1187,6 @@ $outline
           SnackBar(content: Text('章节名生成失败: $e'), backgroundColor: Colors.red));
       }
     }
-  }
-
-  /// 将AI生成的章节名同步到大纲（更新已有章节名称，不新增）
-  Future<void> _syncChapterNameToOutline(int num, String name) async {
-    try {
-      final base = await NovelFolderService().getNovelsFolderPath();
-      final f = File('$base/$_novel/outline.json');
-      if (!await f.exists()) return;
-      final root = jsonDecode(await f.readAsString());
-      final volumes = (root['children'] as List?);
-      if (volumes == null || volumes.length < 2) return;
-      final volNode = volumes[1];
-      final volChildren = volNode['children'] as List? ?? [];
-      for (final vol in volChildren) {
-        final chList = vol['children'] as List? ?? [];
-        for (final ch in chList) {
-          final title = ch['title'] as String? ?? '';
-          if (title.contains('第$num章')) {
-            ch['title'] = '第$num章：$name';
-            await f.writeAsString(jsonEncode(root));
-            return;
-          }
-        }
-      }
-    } catch (_) {}
   }
 
   Widget _tip(String text) => Padding(

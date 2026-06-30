@@ -1,10 +1,7 @@
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:path/path.dart' as path;
-import '../../domain/services/novel_folder_service.dart';
 import '../../domain/services/inspiration_service.dart';
+import '../../domain/services/chapter_outline_service.dart';
 import '../pages/novel_architecture_page.dart';
 
 class OutlineNode {
@@ -38,16 +35,11 @@ class _OutlinePageState extends State<OutlinePage> {
     if (n != _novel) { _novel = n; if (n != null) _load(); }
   }
 
-  Future<String> _filePath() async {
-    final base = await NovelFolderService().getNovelsFolderPath();
-    return path.join(base, _novel!, 'outline.json');
-  }
-
   Future<void> _load() async {
     try {
-      final fp = await _filePath(); final file = File(fp);
-      final loaded = await file.exists() ? OutlineNode.fromJson(jsonDecode(await file.readAsString())) : _defaultOutline();
-      setState(() { _root = loaded; _selectedPath = null; _collapsedPaths.clear(); });
+      final svc = ChapterOutlineService();
+      final data = await svc.loadOutline(_novel!);
+      setState(() { _root = _fromMap(data); _selectedPath = null; _collapsedPaths.clear(); });
     } catch (_) {
       setState(() { _root = _defaultOutline(); _selectedPath = null; _collapsedPaths.clear(); });
     }
@@ -66,24 +58,21 @@ class _OutlinePageState extends State<OutlinePage> {
 
   Future<void> _save() async {
     if (_root == null) return;
-    final fp = await _filePath(); await File(fp).parent.create(recursive: true);
-    await File(fp).writeAsString(jsonEncode(_root!.toJson()));
+    await ChapterOutlineService().saveOutline(_novel!, _toMap(_root!));
   }
 
   // ===== 路径系统：空串=根节点，"0"=第1子，"0/0"=第1子的第1子 =====
+  Map<String, dynamic> _toMap(OutlineNode n) => n.toJson();
+  OutlineNode _fromMap(Map<String, dynamic> m) => OutlineNode.fromJson(m);
+
   OutlineNode? _nodeAt(String p) {
     if (_root == null) return null;
-    if (p.isEmpty) return _root;
-    var n = _root!;
-    for (final s in p.split('/')) {
-      final i = int.parse(s);
-      if (i >= n.children.length) return null;
-      n = n.children[i];
-    }
-    return n;
+    final map = _toMap(_root!);
+    final result = ChapterOutlineService().nodeAt(map, p);
+    return result == null ? null : _fromMap(result);
   }
 
-  int _depthOf(String p) => p.isEmpty ? 0 : p.split('/').length;
+  int _depthOf(String p) => ChapterOutlineService().depthOf(p);
 
   _OutlineLevel _levelOf(String p) {
     final d = _depthOf(p);
@@ -101,96 +90,38 @@ class _OutlinePageState extends State<OutlinePage> {
     switch (l) { case _OutlineLevel.root: return Colors.teal; case _OutlineLevel.volume: return Colors.indigo; case _OutlineLevel.chapter: return Colors.orange; case _OutlineLevel.leaf: return Colors.grey; }
   }
 
-  /// 统计分卷大纲下所有章节的总数（全局计数）
-  int _globalChapterCount() {
-    final volumesNode = _nodeAt('1');
-    if (volumesNode == null) return 0;
-    int count = 0;
-    for (final vol in volumesNode.children) {
-      count += vol.children.length;
-    }
-    return count;
-  }
-
-  /// parentPath下该叫什么名字
+/// parentPath下该叫什么名字
   String _autoName(String parentPath) {
-    final parent = _nodeAt(parentPath);
-    final depth = _depthOf(parentPath) + 1; // 新子节点的深度
-    final localN = (parent?.children.length ?? 0) + 1;
-
-    // 父路径是"0"=全书总纲 → 大节点N
-    if (parentPath == '0') return '大节点$localN';
-    // 父路径在"0/"下 → 全书总纲的子孙
-    if (parentPath.startsWith('0/')) {
-      if (depth == 2) return '大节点$localN';
-      return '小节点$localN';
-    }
-    // 父路径是"1"=分卷大纲 → 卷N（弹窗后会替换名称）
-    if (parentPath == '1') return '卷$localN：未命名';
-    // 父路径在"1/"下 → 分卷大纲的子孙（章节用全局编号）
-    if (parentPath.startsWith('1/')) {
-      if (depth == 3) {
-        // 全局章节编号：统计所有卷中全部现有章节数 + 1
-        final globalN = _globalChapterCount() + 1;
-        return '第${globalN}章';
-      }
-      return '小节点$localN';
-    }
-    // 通用回退
-    if (depth == 1) return '大节点$localN';
-    if (depth == 2) return '第$localN章';
-    return '小节点$localN';
+    return ChapterOutlineService().autoName(_toMap(_root!), parentPath);
   }
 
-  void _addChild(String parentPath) {
-    // 新建章节或分卷时弹出命名窗口
-    final isVolume = parentPath == '1'; // 分卷大纲下建分卷
-    final isChapter = parentPath.startsWith('1/') && _depthOf(parentPath) == 2; // 卷下建章节
-    if (isVolume || isChapter) {
-      _addWithDialog(parentPath, isVolume ? '新分卷' : '新章节');
-      return;
+  Future<void> _addChild(String parentPath) async {
+    if (_root == null) return;
+    final svc = ChapterOutlineService();
+    final isAddVolume = parentPath == '1';
+    final isAddChapter = parentPath.startsWith('1/') && _depthOf(parentPath) == 2;
+
+    String? customName;
+    if (isAddVolume) {
+      final defaultName = svc.autoName(_toMap(_root!), parentPath);
+      customName = await svc.showVolumeNameDialog(context, defaultName: defaultName);
+      if (customName == null) return;
+    } else if (isAddChapter) {
+      customName = await svc.showChapterNameDialog(context);
+      if (customName == null) return;
+      // 章节名格式：第X章：名称 或 第X章：待定
+      final autoTitle = svc.autoName(_toMap(_root!), parentPath);
+      customName = '$autoTitle：$customName';
     }
-    _doAddChild(parentPath, _autoName(parentPath));
+
+    _doAddChild(parentPath, customName);
   }
 
-  Future<void> _addWithDialog(String parentPath, String title) async {
-    final nameCtrl = TextEditingController();
-    final defaultName = _autoName(parentPath);
-    final name = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
-            controller: nameCtrl,
-            autofocus: true,
-            decoration: InputDecoration(hintText: '输入名称（默认：$defaultName）', border: const OutlineInputBorder()),
-          ),
-          const SizedBox(height: 8),
-          Text(title == '新章节' ? '直接点击确认则章节名显示"待定"' : '直接点击确认则使用默认名称',
-            style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-          FilledButton(onPressed: () {
-            final input = nameCtrl.text.trim();
-            if (title == '新章节') {
-              Navigator.pop(ctx, input.isEmpty ? '$defaultName：待定' : '$defaultName：$input');
-            } else {
-              Navigator.pop(ctx, input.isEmpty ? defaultName : input);
-            }
-          }, child: const Text('确认')),
-        ],
-      ),
-    );
-    if (name != null && mounted) {
-      _doAddChild(parentPath, name);
-    }
-  }
-
-  void _doAddChild(String parentPath, String name) {
+  void _doAddChild(String parentPath, String? customName) {
+    if (_root == null) return;
     final p = _nodeAt(parentPath); if (p == null) return;
     setState(() {
+      final name = customName ?? _autoName(parentPath);
       p.children.add(OutlineNode(title: name, content: ''));
       _collapsedPaths.remove(parentPath);
       final newIdx = p.children.length - 1;
@@ -199,13 +130,37 @@ class _OutlinePageState extends State<OutlinePage> {
     _save();
   }
 
-  void _addSibling(String nodePath) {
-    if (nodePath.isEmpty) return; // 根节点不能有兄弟
+  Future<void> _addSibling(String nodePath) async {
+    if (nodePath.isEmpty || _root == null) return;
+    final svc = ChapterOutlineService();
+    final isSiblingOfChapter = nodePath.startsWith('1/') && _depthOf(nodePath) == 3;
+    final isSiblingOfVolume = nodePath.startsWith('1/') && _depthOf(nodePath) == 2;
+
+    String? customName;
+    if (isSiblingOfVolume) {
+      final ls = nodePath.lastIndexOf('/');
+      final parentPath = ls == -1 ? '' : nodePath.substring(0, ls);
+      customName = await svc.showVolumeNameDialog(context, defaultName: svc.autoName(_toMap(_root!), parentPath));
+      if (customName == null) return;
+    } else if (isSiblingOfChapter) {
+      customName = await svc.showChapterNameDialog(context);
+      if (customName == null) return;
+      final ls = nodePath.lastIndexOf('/');
+      final parentPath = ls == -1 ? '' : nodePath.substring(0, ls);
+      final autoTitle = svc.autoName(_toMap(_root!), parentPath);
+      customName = '$autoTitle：$customName';
+    }
+
+    _doAddSibling(nodePath, customName);
+  }
+
+  void _doAddSibling(String nodePath, String? customName) {
+    if (_root == null) return;
     final ls = nodePath.lastIndexOf('/');
     final parentPath = ls == -1 ? '' : nodePath.substring(0, ls);
     final p = _nodeAt(parentPath); if (p == null) return;
-    final name = _autoName(parentPath);
     setState(() {
+      final name = customName ?? _autoName(parentPath);
       p.children.add(OutlineNode(title: name, content: ''));
       final newIdx = p.children.length - 1;
       _selectNode(parentPath.isEmpty ? '$newIdx' : '$parentPath/$newIdx');
@@ -358,8 +313,9 @@ class _OutlinePageState extends State<OutlinePage> {
       ]),
       trailing: sel
         ? Row(mainAxisSize: MainAxisSize.min, children: [
-            GestureDetector(onTap: () => _addChild(p), child: Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(3)), child: Text('＋子', style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500)))),
-            if (p.isNotEmpty && p != '0' && p != '1') ...[
+            if (ChapterOutlineService().canAddChild(_toMap(_root!), p))
+              GestureDetector(onTap: () => _addChild(p), child: Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(3)), child: Text('＋子', style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500)))),
+            if (ChapterOutlineService().canAddSibling(_toMap(_root!), p)) ...[
               const SizedBox(width: 2),
               GestureDetector(onTap: () => _addSibling(p), child: Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(3)), child: Text('＋同', style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500)))),
             ],
@@ -416,8 +372,9 @@ class _OutlinePageState extends State<OutlinePage> {
           Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: levelColor.withAlpha(25), borderRadius: BorderRadius.circular(6), border: Border.all(color: levelColor.withAlpha(80))), child: Text(_levelLabel(level), style: TextStyle(fontSize: 12, color: levelColor, fontWeight: FontWeight.w600))),
           const SizedBox(width: 12),
           Expanded(child: Text(_buildBreadcrumb(_selectedPath!), style: TextStyle(fontSize: 12, color: Colors.grey[500]), maxLines: 1, overflow: TextOverflow.ellipsis)),
-          _toolBtn('＋子', Icons.subdirectory_arrow_right, () => _addChild(_selectedPath!)),
-          if (_selectedPath != '0' && _selectedPath != '1') ...[
+          if (ChapterOutlineService().canAddChild(_toMap(_root!), _selectedPath!))
+            _toolBtn('＋子', Icons.subdirectory_arrow_right, () => _addChild(_selectedPath!)),
+          if (ChapterOutlineService().canAddSibling(_toMap(_root!), _selectedPath!)) ...[
             const SizedBox(width: 4),
             _toolBtn('＋同', Icons.add, () => _addSibling(_selectedPath!)),
           ],
