@@ -1,0 +1,142 @@
+{
+  "_meta": {"description": "各类目代表作及知名作者，用于创作向导横屏展示"},
+  "references": {
+    "dongfang-xuanhuan": {
+      "icon": "🐉",
+      "masterworks": [
+        {"title": "斗破苍穹", "author": "天蚕土豆", "desc": "废柴逆袭流开山之作"},
+        {"title": "完美世界", "author": "辰东", "desc": "荒天帝热血成长史诗"},
+        {"title": "凡人修仙传", "author": "忘语", "desc": "凡人流奠基之作"},
+        {"title": "遮天", "author": "辰东", "desc": "大帝流经典，九龙拉棺"},
+        {"title": "斗罗大陆", "author": "唐家三少", "desc": "魂环体系开创者"},
+        {"title": "牧神记", "author": "宅猪", "desc": "儒道流+神道流创新融合"}
+      ]
+    },
+    "xifang-qihuan": {
+      "icon": "⚔️",
+      "masterworks": [
+        {"title": "诡秘之主", "author": "爱潜水的乌贼", "desc": "序列诡秘流巅峰"},
+        {"title": "盘龙", "author": "我吃西红柿", "desc": "西幻经典，法则修炼"},
+        {"title": "放开那个女巫", "author": "二目", "desc": "蒸汽西幻+种田"},
+        {"title": "冰与火之歌", "author": "乔治·马丁", "desc": "西方奇幻史诗标杆"}
+      ]
+    },
+    "gudian-xianxia": {
+      "icon": "🏔️",
+      "masterworks": [
+        {"title": "仙逆", "author": "耳根", "desc": "古典修仙，逆天改命"},
+        {"title": "凡人修仙传", "author": "忘语", "desc": "凡人流仙侠经典"},
+        {"title": "剑来", "author": "烽火戏诸侯", "desc": "剑修流，文青天花板"},
+        {"title": "遮天", "author": "辰东", "desc": "洪荒仙侠，九天十地"},
+        {"title": "大道争锋", "author": "误道者", "desc": "道门正统，真法传承"}
+      ]
+    },
+    "xiandai-xiuzhen": {
+      "icon": "🏙️",
+      "masterworks": [
+        {"title": "都市修仙传", "author": "忘语", "desc": "都市修真开山"},
+        {"title": "大王饶命", "author": "会说话的肘子", "desc": "灵气复苏+毒鸡汤"},
+        {"title": "修真聊天群", "author": "圣骑士的传说", "desc": "修真+现代社交"},
+        {"title": "全球高武", "author": "老鹰吃小鸡", "desc": "现代高武体系"}
+      ]
+    },
+    "dushi-yineng": {
+      "icon": "⚡",
+      "masterworks": [
+        {"title": "全球高武", "author": "老鹰吃小鸡", "desc": "高武+异能"},
+        {"title": "星门", "author": "老鹰吃小鸡", "desc": "异能觉醒"},
+        {"title": "全职法师", "author": "乱", "desc": "都市魔法+异能融合"},
+        {"title": "黎明之剑", "author": "远瞳", "desc": "异能+种田+科幻"}
+      ]
+    },
+    "dushi-shuangwen": {
+      "icon": "💰",
+      "masterworks": [
+        {"title": "赘婿", "author": "愤怒的香蕉", "desc": "赘婿流经典"},
+        {"title": "神豪从签到开始", "author": "独孤求败", "desc": "神豪系统流"},
+        {"title": "回到过去当富翁", "author": "未知", "desc": "重生商战神豪"},
+        {"title": "最强装逼打脸系统", "author": "太上老君", "desc": "系统爽文"}
+      ]
+    },
+    "jiakong-lishi": {
+      "icon": "🏛️",
+      "masterworks": [
+        {"title": "新宋", "author": "阿越", "desc": "历史穿越经典"},
+        {"title": "覆汉", "author": "榴弹怕水", "desc": "三国种田"},
+        {"title": "赘婿", "author": "愤怒的香蕉", "desc": "架空历史+商战"},
+        {"title": "晚明", "author": "柯山梦", "desc": "明末争霸文"}
+      ]
+    },
+    "xingjikehuan": {
+      "icon": "🚀",
+      "masterworks": [
+        {"title": "星际游轮", "author": "古剑锋", "desc": "星际冒险"},
+        {"title": "深空之下", "author": "远瞳", "desc": "星际文明探索"},
+        {"title": "银河帝国", "author": "阿西莫夫", "desc": "科幻基石"},
+        {"title": "机动风暴", "author": "骷髅精灵", "desc": "机甲流经典"}
+      ]
+    },
+    "wuxia-chuantong": {
+      "icon": "🗡️",
+      "masterworks": [
+        {"title": "射雕英雄传", "author": "金庸", "desc": "武侠巅峰"},
+        {"title": "多情剑客无情剑", "author": "古龙", "desc": "江湖情怀"},
+        {"title": "英雄志", "author": "孙晓", "desc": "儒侠风骨"},
+        {"title": "雪中悍刀行", "author": "烽火戏诸侯", "desc": "新武侠标杆"}
+      ]
+    },
+    "gongting": {
+      "icon": "👑",
+      "masterworks": [
+        {"title": "甄嬛传", "author": "流潋紫", "desc": "宫斗巅峰之作"},
+        {"title": "知否知否", "author": "关心则乱", "desc": "古代宅斗经典"},
+        {"title": "凤囚凰", "author": "天衣有风", "desc": "宫廷权谋+爱情"},
+        {"title": "东宫", "author": "匪我思存", "desc": "帝后情深虐恋"}
+      ]
+    },
+    "gudai-yanqing": {
+      "icon": "🌸",
+      "masterworks": [
+        {"title": "知否知否应是绿肥红瘦", "author": "关心则乱", "desc": "庶女宅斗经典"},
+        {"title": "重生之将门毒后", "author": "千山茶客", "desc": "女强重生逆袭"},
+        {"title": "春日宴", "author": "白鹭成双", "desc": "古言甜宠"},
+        {"title": "长风渡", "author": "墨书白", "desc": "古言权谋+先婚后爱"}
+      ]
+    },
+    "zongcaihaomen": {
+      "icon": "💼",
+      "masterworks": [
+        {"title": "何以笙箫默", "author": "顾漫", "desc": "破镜重圆经典"},
+        {"title": "杉杉来吃", "author": "顾漫", "desc": "总裁+甜宠"},
+        {"title": "亲爱的热爱的", "author": "墨宝非宝", "desc": "电竞+甜宠"},
+        {"title": "冰糖炖雪梨", "author": "酒小七", "desc": "体育竞技+恋爱"}
+      ]
+    },
+    "xiandai-yanqing": {
+      "icon": "💝",
+      "masterworks": [
+        {"title": "微微一笑很倾城", "author": "顾漫", "desc": "校园+网游"},
+        {"title": "你是我的荣耀", "author": "顾漫", "desc": "职场+恋爱"},
+        {"title": "偷偷藏不住", "author": "竹已", "desc": "校园甜宠"},
+        {"title": "暗恋橘生淮南", "author": "八月长安", "desc": "青春暗恋"}
+      ]
+    },
+    "kuaichuan": {
+      "icon": "🔄",
+      "masterworks": [
+        {"title": "快穿之打脸狂魔", "author": "风流书呆", "desc": "快穿打脸经典"},
+        {"title": "快穿女配冷静点", "author": "淡樱", "desc": "女配系统逆袭"},
+        {"title": "攻略不下来的男人", "author": "袖侧", "desc": "快穿+深度情感"}
+      ]
+    },
+    "wucp-danvzhu": {
+      "icon": "👸",
+      "masterworks": [
+        {"title": "木兰无长兄", "author": "祈祷君", "desc": "无CP女强文"},
+        {"title": "我有霸总光环", "author": "江月年年", "desc": "事业女王"},
+        {"title": "女配没有求生欲", "author": "藤萝为枝", "desc": "独立女主"},
+        {"title": "穿越之女配逆袭", "author": "锦凰", "desc": "无CP逆袭"}
+      ]
+    }
+  }
+}

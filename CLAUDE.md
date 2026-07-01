@@ -111,17 +111,32 @@ flutter build apk --debug
 adb -s emulator-5554 install -r build/app/outputs/flutter-apk/app-debug.apk
 # 3. 启动
 adb -s emulator-5554 shell am start -n com.example.ai_novelgenerator_flutter/.MainActivity
-# 4. 截图验证
-adb -s emulator-5554 exec-out screencap -p > screen.png
+# 4. 截图验证（必须存入项目目录，严禁丢桌面）
+adb -s emulator-5554 exec-out screencap -p > test_screenshots/{轮次}_{描述}.png
+# 5. UI dump（同样存入项目目录）
+adb -s emulator-5554 exec-out uiautomator dump /dev/stdout > test_screenshots/{轮次}_{描述}.xml
 ```
+
+## 🚨 测试伴生文件铁律
+
+**所有测试产生的文件必须存入项目目录，严禁丢在桌面或其他位置：**
+
+| 文件类型 | 存放路径 | 命名规范 |
+|---------|---------|---------|
+| 截图 (.png) | `test_screenshots/` | `{轮次}_{页面}_{操作}.png` |
+| UI dump (.xml) | `test_screenshots/` | `{轮次}_{页面}_ui.xml` |
+| 日志 (.log/.txt) | `test_screenshots/` | `{轮次}_log.txt` |
+
+**桌面禁止出现任何** `verify_*.png`、`ui_*.xml`、`screen.png` 等测试伴生文件。
 
 ## 验证原则
 
 **严禁仅凭代码审计判断功能可用。** 每次修改后必须：
 1. 构建APK
 2. 安装到模拟器
-3. 实际操作验证（截图+UI dump）
-4. 确认修改生效后才能标记完成
+3. 实际操作验证（截图+UI dump），**所有产物存入 `test_screenshots/`**
+4. 对照 `INTERACTIVE_TEST_CHECKLIST.md` 逐项打勾
+5. 确认修改生效后才能标记完成
 
 **已验证可用的标准：** 用户能实际使用，不是"代码逻辑正确"。
 

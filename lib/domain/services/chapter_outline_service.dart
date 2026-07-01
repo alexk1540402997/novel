@@ -379,11 +379,10 @@ class ChapterOutlineService {
     await saveOutline(novelName, outline);
   }
 
-  /// 创建新分卷（在大纲中追加，同时在章节目录创建第一章）
-  Future<({String volTitle, int chapterNum})> createVolume({
+  /// 创建新分卷（仅在大纲中追加，不自动创建章节）
+  Future<String> createVolume({
     required String novelName,
     required String volName,
-    required Map<int, String> meta,
   }) async {
     final outline = await loadOutline(novelName);
     final children = outline['children'] as List? ?? [];
@@ -403,19 +402,7 @@ class ChapterOutlineService {
     volList.add({'title': finalVolName, 'content': '', 'children': []});
     await saveOutline(novelName, outline);
 
-    // 在章节目录中创建第一个章节
-    final allNums = await getChapterNumbers(novelName);
-    int lastNum = allNums.isEmpty ? 0 : allNums.reduce((a, b) => a > b ? a : b);
-    final newNum = lastNum + 1;
-    await saveChapter(novelName, newNum, '');
-    meta[newNum] = '待定';
-    await saveChapterMeta(novelName, meta);
-
-    // 在新建分卷中添加第一章
-    volList.last['children'] = [{'title': '第$newNum章：待定', 'content': '', 'children': []}];
-    await saveOutline(novelName, outline);
-
-    return (volTitle: finalVolName, chapterNum: newNum);
+    return finalVolName;
   }
 
   // ============================================================

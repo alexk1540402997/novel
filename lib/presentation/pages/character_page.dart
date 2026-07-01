@@ -297,46 +297,154 @@ class _CharacterPageState extends State<CharacterPage> {
       if (isNew) await _svc.add(_novel!, r);
       else await _svc.update(_novel!, r);
       await _load();
-      if (genImage) {
-        await _generateCharacterImage(r);
+      if (isNew && genImage && mounted) {
+        // 新建角色时弹出确认对话框
+        final makeImage = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Row(children: [
+              Icon(Icons.image, color: Colors.pink),
+              SizedBox(width: 8),
+              Text('是否建立角色图片形象？'),
+            ]),
+            content: Text('AI将为「${r.name}」生成专属角色形象图，\n生成后您可以预览并选择使用或重新生成。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('暂不'),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.pop(ctx, true),
+                icon: const Icon(Icons.auto_awesome, size: 16),
+                label: const Text('开始生成'),
+              ),
+            ],
+          ),
+        );
+        if (makeImage == true) {
+          await _generateCharacterImage(r, fromMenu: false);
+        }
       }
     }
   }
 
-  Future<void> _generateCharacterImage(NovelCharacter c) async {
+  Future<void> _generateCharacterImage(NovelCharacter c, {bool fromMenu = false}) async {
     if (_novel == null) return;
+
+    // 循环生成直到用户满意
+    while (true) {
+      final imagePath = await _doGenerateImage(c);
+      if (imagePath == null || !mounted) return;
+
+      // 预览+确认弹窗
+      final action = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) {
+          final imgFile = File(imagePath);
+          final hasImg = imgFile.existsSync();
+          return AlertDialog(
+            title: Row(children: [
+              const Icon(Icons.image, color: Colors.pink),
+              const SizedBox(width: 8),
+              const Text('角色形象预览'),
+            ]),
+            content: Column(mainAxisSize: MainAxisSize.min, children: [
+              if (hasImg)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(imgFile, height: 280, fit: BoxFit.contain),
+                )
+              else
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(child: Text('图片加载失败', style: TextStyle(color: Colors.grey))),
+                ),
+              const SizedBox(height: 12),
+              Text('角色：${c.name}', style: const TextStyle(fontWeight: FontWeight.w600)),
+            ]),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, 'close'),
+                child: const Text('关闭'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.pop(ctx, 'refresh'),
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('重新生成'),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.pop(ctx, 'confirm'),
+                icon: const Icon(Icons.check, size: 16),
+                label: const Text('确认使用'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (action == 'confirm') {
+        c.imagePath = imagePath;
+        await _svc.update(_novel!, c);
+        await _load();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('角色形象已保存 ✅'), backgroundColor: Colors.green),
+          );
+        }
+        return;
+      } else if (action == 'refresh') {
+        continue; // 重新生成
+      } else {
+        // close — 不保存图片
+        return;
+      }
+    }
+  }
+
+  /// 实际调用AI生成图片
+  Future<String?> _doGenerateImage(NovelCharacter c) async {
     final desc = StringBuffer();
-    desc.writeln('角色：${c.name}，${c.gender}，${c.age}');
+    desc.writeln('角色：${c.name}，${c.gender}，${c.age}岁');
     if (c.appearance.isNotEmpty) desc.writeln('外貌：${c.appearance}');
     if (c.personality.isNotEmpty) desc.writeln('性格：${c.personality.join("、")}');
     if (c.faction.isNotEmpty) desc.writeln('势力：${c.faction}');
-    desc.writeln('风格：Chinese illustration/animation style, character portrait');
+    desc.writeln('风格：Chinese illustration/animation style, character portrait, high quality');
+
     try {
-      if (!mounted) return;
+      if (!mounted) return null;
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
+        builder: (_) => const Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('角色形象生成中\n请耐心等待...', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+          ]),
+        ),
       );
+
       final imagePath = await ImageGenerationService().generateSceneImage(
         sceneText: desc.toString(),
         novelName: _novel!,
         chapterNum: c.firstChapter,
       );
-      if (!mounted) return;
-      Navigator.pop(context); // dismiss loading
-      if (imagePath != null) {
-        c.imagePath = imagePath;
-        await _svc.update(_novel!, c);
-        await _load();
-      }
+
+      if (mounted) Navigator.pop(context); // dismiss loading
+      return imagePath;
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // dismiss loading
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('生成角色图失败：$e')),
+          SnackBar(content: Text('生成角色图失败：$e'), backgroundColor: Colors.red),
         );
       }
+      return null;
     }
   }
 
@@ -485,100 +593,211 @@ class _CharacterPageState extends State<CharacterPage> {
             style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500)),
       );
 
-  Widget _card(NovelCharacter c) => Card(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: _roleColor(c.role).withAlpha(80))),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _showDetail(c),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (c.imagePath.isNotEmpty)
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Image.file(
-                    File(c.imagePath),
-                    height: 120,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+  Widget _card(NovelCharacter c) {
+    final roleColor = _roleColor(c.role);
+    final hasImage = c.imagePath.isNotEmpty;
+    final imgFile = hasImage ? File(c.imagePath) : null;
+    final imgExists = imgFile != null && imgFile.existsSync();
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: roleColor.withAlpha(60)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _showDetail(c),
+        child: Stack(
+          children: [
+            // 底层：角色色彩背景渐变
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      roleColor.withAlpha(30),
+                      roleColor.withAlpha(10),
+                      roleColor.withAlpha(25),
+                    ],
                   ),
                 ),
-              Row(children: [
-                CircleAvatar(
-                    radius: 20,
-                    backgroundColor: _roleColor(c.role).withAlpha(40),
-                    child: Text(c.name.isNotEmpty ? c.name[0] : '?',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: _roleColor(c.role)))),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(c.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                  Text('${c.gender} · ${c.role}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                ])),
-                InkWell(
-                  onTap: () => _showItemInspiration(c),
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    margin: const EdgeInsets.only(right: 4),
-                    decoration: BoxDecoration(color: Colors.orange.withAlpha(20), borderRadius: BorderRadius.circular(4)),
-                    child: const Icon(Icons.lightbulb, size: 16, color: Colors.orange),
-                  ),
+              ),
+            ),
+            // 中层：角色形象图（居中，带虚化边缘）
+            if (imgExists)
+              Positioned(
+                top: 8,
+                left: 0,
+                right: 0,
+                height: 145,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // 图片
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.file(
+                        imgFile!,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                    ),
+                    // 左右虚化遮罩
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              roleColor.withAlpha(120),
+                              Colors.transparent,
+                              Colors.transparent,
+                              Colors.transparent,
+                              Colors.transparent,
+                              roleColor.withAlpha(120),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // 底部虚化遮罩（过渡到文字区）
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: 40,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              roleColor.withAlpha(60),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                PopupMenuButton<String>(
-                    iconSize: 18,
-                    onSelected: (a) {
-                      if (a == 'edit') _edit(existing: c);
-                      if (a == 'delete') _delete(c);
-                    },
-                    itemBuilder: (ctx) => [
-                          const PopupMenuItem(value: 'edit', child: Text('编辑')),
-                          const PopupMenuItem(
-                              value: 'delete',
-                              child: Text('删除', style: TextStyle(color: Colors.red))),
-                        ]),
-              ]),
-              if (c.faction.isNotEmpty)
-                Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Row(children: [
-                      Icon(Icons.flag, size: 13, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
-                      Expanded(child: Text(c.faction, style: TextStyle(fontSize: 12, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    ])),
-              const Spacer(),
-              if (c.personality.isNotEmpty)
-                Wrap(
-                    spacing: 4,
-                    runSpacing: 2,
-                    children: c.personality
-                        .take(4)
-                        .map((p) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                                color: Colors.grey[100],
-                                borderRadius: BorderRadius.circular(6)),
-                            child: Text(p, style: const TextStyle(fontSize: 10))))
-                        .toList()),
-              const SizedBox(height: 6),
-              Row(children: [
-                Icon(Icons.people, size: 13, color: Colors.grey[500]),
-                const SizedBox(width: 4),
-                Text('关系 ${c.relationships.length}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                const Spacer(),
-                if (c.firstChapter > 0)
-                  Text('首出第${c.firstChapter}章',
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-              ]),
-            ]),
-          ),
+              ),
+            // 顶层：文字信息
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 如果没有图片，占位空间
+                  if (!imgExists) const SizedBox(height: 4),
+                  if (imgExists) const SizedBox(height: 115),
+                  // 角色名+定位行
+                  Row(children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: roleColor.withAlpha(50),
+                      child: Text(c.name.isNotEmpty ? c.name[0] : '?',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: roleColor, fontSize: 14)),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(c.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                        Text('${c.gender} · ${c.role}',
+                          style: TextStyle(fontSize: 11, color: Colors.grey[700])),
+                      ]),
+                    ),
+                    // 灵感按钮
+                    InkWell(
+                      onTap: () => _showItemInspiration(c),
+                      borderRadius: BorderRadius.circular(4),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withAlpha(25),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Icon(Icons.lightbulb, size: 15, color: Colors.orange),
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      iconSize: 16,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onSelected: (a) {
+                        if (a == 'edit') _edit(existing: c);
+                        if (a == 'regenerate') _generateCharacterImage(c, fromMenu: true);
+                        if (a == 'delete') _delete(c);
+                      },
+                      itemBuilder: (ctx) => [
+                        const PopupMenuItem(value: 'edit', child: Text('编辑', style: TextStyle(fontSize: 13))),
+                        PopupMenuItem(
+                          value: 'regenerate',
+                          child: Row(children: [
+                            const Icon(Icons.image, size: 16, color: Colors.pink),
+                            const SizedBox(width: 6),
+                            const Text('重新生成形象图', style: TextStyle(fontSize: 13)),
+                          ]),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Text('删除', style: TextStyle(color: Colors.red, fontSize: 13)),
+                        ),
+                      ],
+                    ),
+                  ]),
+                  // 势力
+                  if (c.faction.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Row(children: [
+                        Icon(Icons.flag, size: 12, color: Colors.grey[500]),
+                        const SizedBox(width: 4),
+                        Expanded(child: Text(c.faction,
+                          style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                          maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      ]),
+                    ),
+                  const Spacer(),
+                  // 性格标签
+                  if (c.personality.isNotEmpty)
+                    Wrap(
+                      spacing: 3,
+                      runSpacing: 2,
+                      children: c.personality.take(4).map((p) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: roleColor.withAlpha(20),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: roleColor.withAlpha(50)),
+                        ),
+                        child: Text(p, style: TextStyle(fontSize: 10, color: roleColor)),
+                      )).toList(),
+                    ),
+                  const SizedBox(height: 4),
+                  // 底部信息栏
+                  Row(children: [
+                    Icon(Icons.people, size: 12, color: Colors.grey[500]),
+                    const SizedBox(width: 3),
+                    Text('${c.relationships.length}',
+                      style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+                    const Spacer(),
+                    if (c.firstChapter > 0)
+                      Text('首出${c.firstChapter}章',
+                        style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+                  ]),
+                ],
+              ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 
   void _showDetail(NovelCharacter c) {
     showDialog(

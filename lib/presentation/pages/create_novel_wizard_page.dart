@@ -276,111 +276,211 @@ class _CreateNovelWizardPageState extends State<CreateNovelWizardPage> {
     );
   }
 
-  // ===== 步骤5: 模板预览 + 问题清单 =====
+  // ===== 步骤5: 模板预览 + 问题清单 + 代表作 =====
   Widget _buildTemplateStep() {
-    final template = TemplateRepository().getTemplateOrDefault(_selectedSub?.id ?? '');
+    final repo = TemplateRepository();
+    var template = repo.getTemplateOrDefault(_selectedSub?.id ?? '');
+    final ref = repo.getReference(_selectedSub?.id ?? '');
 
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('模板与设定参考',
-                    style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 8),
-                Text(
-                  '${_selectedAudience?.name} → ${_selectedMajor?.name} → ${_selectedSub?.name}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-                ),
-                const Divider(height: 32),
+    // 标签融合
+    if (_selectedTags.isNotEmpty) {
+      final tagNames = _selectedTags.map((t) => t.name).toList();
+      template = template.fuseTags(tagNames);
+    }
 
-                if (template.hasContent) ...[
-                  // 全书大纲
-                  if (template.bookOutline.isNotEmpty) ...[
-                    Text('📋 全书大纲模板', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    Card(
-                      child: ExpansionTile(title: const Text('展开查看全书大纲'), children: [
-                        Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.bookOutline, style: const TextStyle(fontSize: 13, height: 1.6))),
-                      ]),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+    return LayoutBuilder(
+      builder: (ctx, constraints) {
+        final isWide = constraints.maxWidth > 700;
 
-                  // 分卷大纲
-                  if (template.volumeOutlines.isNotEmpty) ...[
-                    Text('📚 分卷大纲模板', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    Card(
-                      child: ExpansionTile(title: const Text('展开查看分卷大纲'), children: [
-                        Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.volumeOutlines, style: const TextStyle(fontSize: 13, height: 1.6))),
-                      ]),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
-                  // 世界观架构
-                  if (template.worldbuildingArchitecture.isNotEmpty) ...[
-                    Text('🌍 核心世界观架构', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    Card(
-                      child: ExpansionTile(title: const Text('展开查看世界观架构'), children: [
-                        Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.worldbuildingArchitecture, style: const TextStyle(fontSize: 13, height: 1.6))),
-                      ]),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
-                  // 角色模板
-                  if (template.characterTemplates.isNotEmpty) ...[
-                    Text('👤 主要角色模板', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    Card(
-                      child: ExpansionTile(title: const Text('展开查看角色模板'), children: [
-                        Padding(padding: const EdgeInsets.all(16), child: SelectableText(template.characterTemplates, style: const TextStyle(fontSize: 13, height: 1.6))),
-                      ]),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                ] else
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Column(children: [
-                        Icon(Icons.auto_awesome, size: 48, color: Colors.grey[400]),
-                        const SizedBox(height: 16),
-                        Text('该类型暂无预设模板', style: TextStyle(color: Colors.grey[600])),
-                        const SizedBox(height: 4),
-                        const Text('你可以直接创建空白项目，后续在\n大纲/世界观库/角色库中自行设定', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 13)),
-                      ]),
-                    ),
-                  ),
-              ],
+        return Column(
+          children: [
+            Expanded(
+              child: isWide
+                ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    // 左侧：模板内容（占 60%）
+                    Expanded(flex: 3, child: _buildTemplateContent(template)),
+                    const VerticalDivider(width: 1),
+                    // 右侧：代表作推荐（占 40%）
+                    Expanded(flex: 2, child: _buildReferencePanel(ref)),
+                  ])
+                : _buildTemplateContent(template),
             ),
-          ),
-        ),
-        // 按钮固定底部
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            border: Border(top: BorderSide(color: Colors.grey[200]!)),
-          ),
-          child: Center(
-            child: FilledButton.icon(
-              onPressed: _nextStep,
-              icon: const Icon(Icons.arrow_forward),
-              label: const Text('继续'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+            // 按钮固定底部
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                border: Border(top: BorderSide(color: Colors.grey[200]!)),
+              ),
+              child: Center(
+                child: FilledButton.icon(
+                  onPressed: _nextStep,
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('继续'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTemplateContent(WritingTemplate template) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('模板与设定参考', style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 4),
+        Text(
+          '${_selectedAudience?.name} → ${_selectedMajor?.name} → ${_selectedSub?.name}${_selectedTags.isNotEmpty ? " · ${_selectedTags.map((t) => t.name).join("、")}" : ""}',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
         ),
-      ],
+        if (_selectedTags.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Wrap(
+              spacing: 6, runSpacing: 4,
+              children: _selectedTags.map((t) => Chip(
+                label: Text(t.name, style: const TextStyle(fontSize: 11)),
+                backgroundColor: Colors.orange.withAlpha(20),
+                side: BorderSide(color: Colors.orange.withAlpha(80)),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              )).toList(),
+            ),
+          ),
+        const Divider(height: 28),
+
+        if (template.hasContent) ...[
+          _templateSection('📖 全书大纲', template.bookOutline, Icons.book, Colors.teal),
+          _templateSection('📚 分卷大纲', template.volumeOutlines, Icons.menu_book, Colors.indigo),
+          _templateSection('🌍 世界观架构', template.worldbuildingArchitecture, Icons.public, Colors.blue),
+          _templateSection('👥 角色模板', template.characterTemplates, Icons.people, Colors.orange),
+        ] else
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(children: [
+                Icon(Icons.auto_awesome, size: 48, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                Text('该类型暂无预设模板', style: TextStyle(color: Colors.grey[600])),
+                const SizedBox(height: 4),
+                const Text('你可以直接创建空白项目，后续在\n大纲/世界观库/角色库中自行设定',
+                  textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 13)),
+              ]),
+            ),
+          ),
+      ]),
+    );
+  }
+
+  Widget _templateSection(String title, String content, IconData icon, Color color) {
+    if (content.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: color.withAlpha(60)),
+        ),
+        child: ExpansionTile(
+          leading: Icon(icon, color: color, size: 22),
+          title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: color)),
+          initiallyExpanded: false,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: SelectableText(
+                content,
+                style: const TextStyle(fontSize: 13, height: 1.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReferencePanel(GenreReference? ref) {
+    if (ref == null || ref.masterworks.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.auto_stories, size: 40, color: Colors.grey[300]),
+            const SizedBox(height: 12),
+            Text('暂无代表作数据', style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+          ]),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Text(ref.icon, style: const TextStyle(fontSize: 22)),
+          const SizedBox(width: 8),
+          Text('代表作与名家', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+        ]),
+        const SizedBox(height: 4),
+        Text('同类作品参考，汲取创作灵感', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+        const Divider(height: 24),
+        ...ref.masterworks.map((m) => Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(color: Colors.grey[200]!),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Icon(Icons.auto_stories, size: 16, color: Colors.teal[300]),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(m.title,
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ),
+                ]),
+                const SizedBox(height: 4),
+                Row(children: [
+                  Icon(Icons.person, size: 12, color: Colors.grey[400]),
+                  const SizedBox(width: 4),
+                  Text(m.author, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                ]),
+                const SizedBox(height: 2),
+                Text(m.desc, style: TextStyle(fontSize: 11, color: Colors.grey[500], fontStyle: FontStyle.italic)),
+              ]),
+            ),
+          ),
+        )),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.amber[50],
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.amber[100]!),
+          ),
+          child: Row(children: [
+            const Icon(Icons.lightbulb, size: 18, color: Colors.amber),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('阅读同类作品有助于理解该类型的叙事节奏和读者期待，但不要模仿——找到自己的独特声音才是关键。',
+                style: TextStyle(fontSize: 11, color: Colors.amber[900]!)),
+            ),
+          ]),
+        ),
+      ]),
     );
   }
 

@@ -61,9 +61,22 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
   Future<void> _loadChapters() async {
     if (_novel == null) return;
     setState(() => _loading = true);
-    final nums = await _fileSvc.getChapterNumbers(_novel!);
+    final fileNums = await _fileSvc.getChapterNumbers(_novel!);
     await _loadChapterMeta();
     await _loadOutlineStructure();
+    // 以大纲分卷中的章节为准，过滤掉已删除但文件残留的章节
+    final outlineNums = <int>{};
+    for (final vg in _volumeGroups) {
+      outlineNums.addAll(vg.chapterNumbers);
+    }
+    // 如果大纲有分卷结构，以大纲为准；否则回退到文件列表
+    List<int> nums;
+    if (outlineNums.isNotEmpty) {
+      nums = outlineNums.toList();
+      nums.sort();
+    } else {
+      nums = fileNums;
+    }
     setState(() { _chapterNums = nums; _loading = false; });
     if (_currentChapter == null && nums.isNotEmpty) {
       _selectChapter(nums.first);
@@ -139,6 +152,60 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
       await f.writeAsString(jsonEncode(_chapterNames.map((k, v) => MapEntry(k.toString(), v))));
     } catch (_) {}
   }
+
+  /// 编辑章节名称（弹出编辑对话框）
+  Future<void> _editChapterName(int chapterNum) async {
+    final ctrl = TextEditingController(text: _chapterNames[chapterNum] ?? '');
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('编辑第$chapterNum章名称'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: '输入章节名称',
+            border: OutlineInputBorder(),
+          ),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('确认'),
+          ),
+        ],
+      ),
+    );
+    if (name != null && name.isNotEmpty && name != _chapterNames[chapterNum]) {
+      await _saveChapterMeta(chapterNum, name);
+      // 同步大纲中的章节名
+      try {
+        final svc = ChapterOutlineService();
+        final outline = await svc.loadOutline(_novel!);
+        final vols = (outline['children'] as List?)?.length == 2 ? outline['children'][1] : null;
+        if (vols != null) {
+          for (final vol in (vols['children'] as List? ?? [])) {
+            for (final ch in (vol['children'] as List? ?? [])) {
+              final title = ch['title'] as String? ?? '';
+              if (title.contains('第$chapterNum章')) {
+                ch['title'] = '第$chapterNum章：$name';
+                await svc.saveOutline(_novel!, outline);
+                break;
+              }
+            }
+          }
+        }
+      } catch (_) {}
+      setState(() {});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('第$chapterNum章名称已更新'), backgroundColor: Colors.teal),
+        );
+      }
+    }
+  }
   /// 长按分卷弹出菜单
   void _showVolumeContextMenu(int volumeIdx, String volTitle) {
     showModalBottomSheet(
@@ -189,7 +256,7 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
     _selectChapter(result.num);
   }
 
-  /// 创建新分卷
+  /// 创建新分卷（仅创建分卷，不自动创建章节）
   Future<void> _addVolume() async {
     if (_novel == null) return;
     final svc = ChapterOutlineService();
@@ -197,17 +264,14 @@ class _ChapterWriterPageState extends State<ChapterWriterPage> {
     if (name == null) return;
 
     try {
-      final result = await svc.createVolume(
+      final volTitle = await svc.createVolume(
         novelName: _novel!,
         volName: name,
-        meta: _chapterNames,
       );
       await _loadChapters();
-      // 找到新建章节并选中
-      _selectChapter(result.chapterNum);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已创建${result.volTitle}，并新建第${result.chapterNum}章'), backgroundColor: Colors.teal),
+          SnackBar(content: Text('已创建$volTitle，长按分卷名可添加章节'), backgroundColor: Colors.teal),
         );
       }
     } catch (e) {
@@ -537,7 +601,7 @@ $outline
               padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
               child: FilledButton.icon(
                 onPressed: _addChapter, icon: const Icon(Icons.add, size: 16),
-                label: const Text('＋新章节'), style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 36)),
+                label: const Text('新章节'), style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 36)),
               ),
             ),
             Padding(
@@ -545,7 +609,7 @@ $outline
               child: OutlinedButton.icon(
                 onPressed: _addVolume,
                 icon: const Icon(Icons.create_new_folder, size: 16, color: Colors.teal),
-                label: const Text('＋新分卷', style: TextStyle(fontSize: 13, color: Colors.teal)),
+                label: const Text('新分卷', style: TextStyle(fontSize: 13, color: Colors.teal)),
                 style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 34)),
               ),
             ),
@@ -601,6 +665,7 @@ $outline
                         dense: true,
                         title: Text(_chapterNames.containsKey(num) && _chapterNames[num]!.isNotEmpty ? '第$num章：${_chapterNames[num]}' : '第$num章', style: TextStyle(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
                         onTap: () => _selectChapter(num),
+                        onLongPress: () => _editChapterName(num),
                       );
                     },
                   )
@@ -633,7 +698,26 @@ $outline
                   const SizedBox(width: 8),
                   const Text('|', style: TextStyle(color: Colors.grey)),
                   const SizedBox(width: 8),
-                  Text(_chapterNames[_currentChapter]!, style: const TextStyle(fontSize: 13, color: Colors.teal)),
+                  InkWell(
+                    onTap: () => _editChapterName(_currentChapter!),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text(_chapterNames[_currentChapter]!, style: const TextStyle(fontSize: 13, color: Colors.teal)),
+                      const SizedBox(width: 4),
+                      Icon(Icons.edit, size: 12, color: Colors.grey[400]),
+                    ]),
+                  ),
+                ] else ...[
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () => _editChapterName(_currentChapter!),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text('未命名', style: TextStyle(fontSize: 13, color: Colors.grey[400], fontStyle: FontStyle.italic)),
+                      const SizedBox(width: 4),
+                      Icon(Icons.edit, size: 12, color: Colors.grey[400]),
+                    ]),
+                  ),
                 ],
               ],
               if (_currentChapter == null) Text('未选择章节', style: TextStyle(color: Colors.grey[500], fontSize: 13)),
@@ -1110,6 +1194,7 @@ $outline
             contentPadding: const EdgeInsets.only(left: 28, right: 8),
             title: Text(_chapterNames.containsKey(num) && _chapterNames[num]!.isNotEmpty ? '第$num章：${_chapterNames[num]}' : '第$num章', style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
             onTap: () => _selectChapter(num),
+            onLongPress: () => _editChapterName(num),
           ));
         }
       }

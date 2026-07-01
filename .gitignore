@@ -50,4 +50,5 @@ assets/config/config.json
 /logs/
 
 prompt_definitions.py
-/novels/
+/novels/test_screenshots/*.png
+test_screenshots/*.xml
